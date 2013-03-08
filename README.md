@@ -1,4 +1,0 @@
-mappergui
-=========
-
-GUI for LibMapper
