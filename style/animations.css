@@ -1,0 +1,20 @@
+@CHARSET "UTF-8";
+
+.row_overOLD{
+	
+
+animation-name:rowover;
+animation-duration: 400ms;
+animation-timing-function:linear;
+animation-delay:50ms;
+animation-iteration-count:1;
+
+/* Safari and Chrome: */
+-webkit-animation-name:rowover;
+-webkit-animation-duration:50ms;
+-webkit-animation-timing-function:linear;
+-webkit-animation-delay:0s;
+-webkit-animation-iteration-count:1;
+}
+
+
