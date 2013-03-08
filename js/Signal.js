@@ -1,28 +1,10 @@
 //connection constructor
-function Connection(row, col)
-{	
-	this.id = "connection" + row + "," + col;
-	this.src = "";
-	this.dest = "";
-	this.mute = 0;
-	this.mode = "";
-	this.range = [1,1,0,1];
-	this.expression = "";
-	this.clipMin = "";
-	this.clipMax = ""; 
-};
 
-//signal constructor 
-function Signal(name)
-{
-	this.name=name;
-};
+
+
 
 // My helper functions //
-function toViewBoxString(vboxX, vboxY, vboxW, vboxH)
-{
-	return vboxX.toString() + " " + vboxY.toString() + " " + vboxW.toString() + " " + vboxH.toString()
-}
+
 
 function makeId(row, col)
 {
@@ -81,3 +63,11 @@ function addCellClass(needle, cell)
 
 
 
+
+
+
+	
+	
+	
+	
+		

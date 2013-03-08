@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>LibMapper GUI Matrix Style</title>
+	<script src="js/Signal.js"></script>
+	<link rel="stylesheet" type="text/css" href="style/style.css" />
+	<link rel="stylesheet" type="text/css" href="style/animations.css" />
+</head>
+<body >
+
+<script><!--
+
+//---------------------------------------------------- //
+//                    Global Vars                      //
+//---------------------------------------------------- //
+var svg;										// holding <SVG> element for easy reference 
+var svgNS = "http://www.w3.org/2000/svg";
+
+var cellWidth = 30;
+var cellHeight = 30;
+var cellRoundedCorner = 4;
+var cellMargin = 1;
+var labelMargin = 5;
+
+
+
+//---------------------------------------------------- //
+//				     LibMapper Data                    //
+//---------------------------------------------------- //
+
+var cols = initFakeCols();
+var rows = initFakeRows();
+var nCols = cols.length;
+var nRows = rows.length;
+
+var connections = new Array();
+
+//---------------------------------------------------- //
+//				     GUI Variables                     //
+//---------------------------------------------------- //
+
+var selectedCell = null;//document.createElementNS(svgNS,"rect"); 	// hold a reference to a selected cell
+															// initialized to nothing to  avoid handling if null conditions
+
+															
+
+//---------------------------------------------------- //
+//					    Initialize                     //
+//---------------------------------------------------- //
+
+
+function init()
+{
+	svg = document.getElementById("mySVG");
+	
+	var i,j;	// declared outside because accessed later to create labels
+	for(i=0; i<nRows; i++)
+	{
+		// create rows
+		
+		var row = document.createElementNS(svgNS,"g");
+		var y = i*(cellHeight+cellMargin);
+		row.setAttribute("transform", "translate(0,"+ y +")");
+		
+		for(j=0; j<nCols; j++)
+		{
+			// add a cell to each row for each column
+			
+			var cell = document.createElementNS(svgNS,"rect");
+			cell.setAttribute("id", makeId(i,j));
+			cell.setAttribute("x",j*(cellWidth+cellMargin));
+			cell.setAttribute("y", 0);
+			cell.setAttribute("rx", cellRoundedCorner);
+			cell.setAttribute("ry", cellRoundedCorner);
+			cell.setAttribute("width",cellWidth);
+			cell.setAttribute("height",cellHeight);
+			cell.setAttribute("class","cell_up");
+			cell.addEventListener("mouseover", cellMouseOverHandler);
+			cell.addEventListener("mouseout", cellMouseOverHandler);
+			cell.addEventListener("click", onCellClick);
+//			cell.addEventListener("dblclick", onCellDoubleClick);
+			row.appendChild(cell);
+		}
+		
+		// create row labels
+		
+		var label = document.createElementNS(svgNS,"text");
+		label.setAttribute("id", "row" + i.toString()  );
+		label.setAttribute("x",j*(cellWidth+cellMargin)+labelMargin);
+		label.setAttribute("y", (cellHeight/2)+4);		// plus 4 to center vertically MAKE DYNAMIC!
+		label.setAttribute("class","label");
+		label.appendChild(document.createTextNode(rows[i].name));	// will need to revisit when real objects
+		
+		row.appendChild(label);
+		
+		svg.appendChild(row);
+	}
+	
+	// create column labels
+	
+	var row = document.createElementNS(svgNS,"g");
+	row.setAttribute("transform", "translate(0,"+ i*(cellHeight+cellMargin) +")");
+	for(j=0; j<nCols; j++)
+	{
+		var label = document.createElementNS(svgNS,"text");
+		label.setAttribute("id", "col" + j.toString()  );
+		var xPos = j*(cellWidth+cellMargin)+11;		// pluss 11 MAKE DYNAMIC!
+		var yPos = labelMargin;
+		label.setAttribute("class","label");
+		label.setAttribute("transform","translate(" + xPos + "," + yPos + ")rotate(90)");
+		label.appendChild(document.createTextNode(cols[j].name));	// will need to revisit when real objects
+		row.appendChild(label);
+	}
+	svg.appendChild(row);
+	
+}
+
+//---------------------------------------------------- //
+//					Event Handlers                     //
+//---------------------------------------------------- //
+
+/**
+ * on cell mouseover, highlights corresponding row and columns
+ * order matters.. I'm styling the row and column first, then the moused over cell
+ * must handle special cases: if the cell is the selected cell or has a connection
+ */
+function cellMouseOverHandler(evt)    
+{
+	var cell = evt.target;		// reference to cell mouse is over
+	var row = cell.parentNode;	// row can be found from it's parent <g>
+								// columns must be found differently (below)
+	
+	var selectedRow = getRowIndex(cell.id);
+	var selectedCol = getColIndex(cell.id);
+	
+	// style row cells
+	
+	for(var i=0; i<nCols; i++)
+	{
+		var curNode = row.childNodes[i];
+		var className = curNode.getAttribute("class");
+		if(className.indexOf("cell_connected") == -1)
+		{
+			className = (className.indexOf("cell_selected") == -1)? "" : "cell_selected "; 
+			if(evt.type == "mouseover")
+				row.childNodes[i].setAttribute("class", className + "row_over");
+			else if(evt.type == "mouseout")
+				row.childNodes[i].setAttribute("class",className + "cell_up");
+		}
+	}
+
+	
+	
+	// style row label
+	
+	if(evt.type == "mouseover")
+		row.childNodes[nCols].setAttribute("class","label_over");
+	else if(evt.type == "mouseout")
+		row.childNodes[nCols].setAttribute("class","label");
+	
+	
+	// style col cells
+
+	for(var i=0; i<nRows; i++)
+	{
+		var currentId = makeId(i,selectedCol);
+		var colCell = svg.getElementById(currentId);
+		var className = colCell.getAttribute("class"); 
+		if(className.indexOf("cell_connected") == -1)
+		{
+			className = (className.indexOf("cell_selected") == -1)? "" : "cell_selected ";
+			if(evt.type == "mouseover")
+				colCell.setAttribute("class", className+"row_over");
+			else if(evt.type == "mouseout")
+			{
+				colCell.setAttribute("class", className+"cell_up");			
+			}
+		}
+	
+	}
+	
+	
+	// style col label
+	
+	var colLabel = svg.getElementById("col" + selectedCol);
+	if(evt.type == "mouseover")
+		colLabel.setAttribute("class","label_over");
+	else if(evt.type == "mouseout")
+		colLabel.setAttribute("class","label");
+	
+	
+	
+	
+	// after the row and col cells are styled as mouse over
+	// we can style the cell that the mouse is over appropriately
+	/*
+	if(cell.id == selectedCell.id)
+		cell.setAttribute("class", "cell_selected");	// if cell is already selected
+	else if(evt.type == "mouseover")
+		cell.setAttribute("class", "cell_over");
+	*/
+};
+
+/**
+ * on cell click, set the cell as selected
+ * handle removing the previously selected cell and the special case where the previous was null
+ */
+
+function onCellClick(evt)    
+{
+	var cell = evt.target;
+
+	if(selectedCell == null)
+	{
+		// set the clicked cell as selected
+		cell.setAttribute("class", addClassName("cell_selected", cell.getAttribute("class")));
+		selectedCell = cell;
+	}
+	else if(cell.id != selectedCell.id)	
+	{	
+		// clear last selected cell
+		selectedCell.setAttribute("class", removeClassName("cell_selected", selectedCell.getAttribute("class")));
+		// set the clicked cell as selected
+		cell.setAttribute("class", addClassName("cell_selected", cell.getAttribute("class")));
+		selectedCell = cell;
+	}	
+	else	// already selected, so deselect
+	{
+		cell.setAttribute("class", removeClassName("cell_selected", cell.getAttribute("class")));
+		selectedCell = null;
+	}
+	
+	
+	// load cell details into info PANE
+	//
+	// ...
+
+}
+
+/**
+ * toggles a connection
+ * checks if the cell already has a connection
+ */
+function toggleConnection()
+{
+	var i;						// to hold index to point into connections array
+	var isConnected = false;	// flag for loop
+	
+	// do nothing if there is no cell selected
+	if(selectedCell == null)	
+		return;
+	
+	// loop through connections array to see if the cell already has a connection 
+	for(i=0; i<connections.length; i++)
+	{
+		if(connections[i].id == "connection" + selectedCell.id){
+			isConnected = true;
+			break;
+		}
+	}
+	
+	// toggle the connection
+	if(isConnected)
+	{
+		connections.splice(i,1);										//remove from connections array
+		selectedCell.setAttribute("class", "cell_up cell_selected");	//style back to selected mouseover
+	}else
+	{
+		var row = getRowIndex(selectedCell.id);
+		var col = getColIndex(selectedCell.id)
+		var connection = new Connection(row, col);	// create a new connection object
+		connections.push(connection);				// add to the connections array 
+		selectedCell.setAttribute("class", "cell_connected cell_selected");	//style appropriately for GUI	
+	}
+	
+};
+
+
+
+
+--></script>
+ 
+ <button onclick="toggleConnection()">Toggle</button><br /><br />	 
+	<svg id="mySVG" width="100%" height="600"
+		 onload="init()"
+		 xmlns="http://www.w3.org/2000/svg" 
+		 xmlns:xlink="http://www.w3.org/1999/xlink">
+	</svg>
+	
+	
+	 
+    
+</body>
+</html>

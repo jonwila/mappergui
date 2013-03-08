@@ -1,0 +1,97 @@
+@CHARSET "UTF-8";
+
+body { background-color: #ffffff; width: 850px; margin: 0 auto;	font-family: Arial, Helvetica, sans-serif;}
+svg{background: none;}
+
+#vScrollbar .slider-wrap {float: left; background-color: lightgray; width:15px;border: none;}
+#vScrollbar .slider-vertical {position:relative;height:100%; background: none; border: none}
+#vScrollbar .ui-slider-handle {width:13px;height:10px;margin:0 auto; left:0; display:block;position:absolute}
+#vScrollbar .scrollbar-top {position:absolute;top:0;}
+#vScrollbar .scrollbar-bottom {position:absolute;bottom:0;}
+#vScrollbar.scrollbar-grip {position:absolute;top:50%;margin-top:-6px;}
+#vScrollbar .ui-slider-range {position:absolute;width:100%;background-color:lightgrey}
+#vScrollbar .ui-widget-header{background: none;}
+
+#hScrollbar {margin-left: 20px;}
+#hScrollbar .slider-wrap {background-color: lightgray; height:15px;border: none;}
+#hScrollbar .slider-horizontal {position:relative;height:100%; background: none; border: none}
+#hScrollbar .ui-slider-handle {height:13px;margin:0 auto; top:0; display:block;position:absolute}
+#hScrollbar .scrollbar-top {position:absolute;top:0;}
+#hScrollbar .scrollbar-bottom {position:absolute;bottom:0;}
+#hScrollbar.scrollbar-grip {position:absolute;top:50%;margin-top:-6px;}
+#hScrollbar .ui-slider-range {position:absolute;width:100%;background-color:lightgrey}
+#hScrollbar .ui-widget-header{background: none;}
+
+a, a:active, a:visited { color: #607890; text-decoration: none; outline-color: -moz-use-text-color; outline-style: none; outline-width: medium; }
+a:hover { color: #036; }
+
+.cell_up{
+	fill: #DDDDDD;
+	
+}
+
+.cell_over{
+	fill: #0076b0;
+	
+}
+.row_over{
+	fill: #AAAAAA;
+}
+
+.cell_selected{
+	stroke-width:2;
+	stroke: #000000;
+}
+.cell_connected{
+	fill: #5cb267;
+	animation-name: connected;
+	animation-duration: 300ms;
+	animation-timing-function: linear;
+	animation-delay: 0s; 
+	animation-iteration-count: 1;
+	
+	/* Safari and Chrome: */
+	-webkit-animation-name: connected;
+	-webkit-animation-duration: 300ms;
+	-webkit-animation-timing-function: linear;
+	-webkit-animation-delay: 0s;
+	-webkit-animation-iteration-count: 1;
+}
+
+@keyframes connected
+{
+	0%  {fill:#EEEEEE;}
+	100%  {fill:#5cb267;}
+}
+
+@-webkit-keyframes connected /* Safari and Chrome */
+{
+	0%  {fill:#EEEEEE;}
+	100%  {fill:#5cb267;}
+}
+
+.label{
+	font-size: 14px;		
+}
+.label_over{
+	font-size: 14px;
+	font-weight: bold;		
+}
+
+
+.pen{
+	stroke: #00FF00;
+	stroke-width: 2; 
+	stroke:rgb(0,0,255);
+	stroke-dasharray: "1,0,5,0";	
+}
+
+
+#hScroll{
+	background-color: #444444;
+}
+#hScrollButton{
+	fill: #EEEEEE;
+}
+	
+	
