@@ -1,7 +1,6 @@
-/**
- * The Model. Model stores items and notifies
- * observers about changes.
- */
+//+++++++++++++++++++++++++++++++++++++++++++ //
+//				LibMapper Model				  //		 
+//+++++++++++++++++++++++++++++++++++++++++++ //
 
 function LibMapperModel (){
 	
@@ -13,45 +12,69 @@ function LibMapperModel (){
 LibMapperModel.prototype = {
 		
 		addSourceSignal : function(signal){
-			this.cols.push(signal.name.toString());	//CHANGE to use object
+			this.cols.push(signal);	
 		},
 		
 		addDestinationSignal : function(signal){
-			this.rows.push(signal.name.toString());	//CHANGE to use object
+			this.rows.push(signal);	
 		},
 		
-		createConnection : function(row, col){
-			var con = new Connection(row,col);
-			con.src = this.cols[col];
-			con.dest = this.rows[row];
+		getSourceSignal : function(name){
+			var i;
+			for(i=0; i<this.cols.length; i++){
+				if(this.cols[i].name == name){
+					return cols[i];
+				}
+			}
+			return false;	
+		},
+		
+		getDestinationSignal : function(name){
+			var i;
+			for(i=0; i<this.rows.length; i++){
+				if(this.rows[i].name == name){
+					return rows[i];
+				}
+			}
+			return false;	
+		},
+		
+		createConnection : function(src, dst){
+			var con = new Connection(src,dst);
 			this.connections.push(con);
 		},
 		
-		removeConnection : function(cellId){
-			this.connections.splice(this.getConnectionIndex(cellId), 1);
+		removeConnection : function(index){
+			this.connections.splice(index, 1);
 		},
 		
-		isConnected : function (cellId){
-			if(this.getConnectionIndex(cellId) == -1)
+		isConnected : function (src, dst)
+		{
+			if(this.getConnectionIndex(src, dst) == -1)
 				return false;
 			else
 				return true;
 		},
 		
-		getConnectionIndex : function(cellId){
-			var i;						// to hold index to point into connections array
+		getConnectionIndex : function(src, dst){
+			
+			if(this.connections.length == 0)
+				return -1;
+
 			// loop through connections array to see if the cell already has a connection 
-			for(i=0; i<this.connections.length; i++){
-				if(this.connections[i].id == "connection" + cellId){
+			var i;						// to hold index to point into connections array
+			for(i=0; i<this.connections.length; i++)
+			{
+				var con = this.connections[i];
+				if(con.src == src && con.dst == dst){
 					break;
 				}
 			}
 			return (i<this.connections.length)? i : -1;
 		},
 		
-		getConnection : function(cellId){
-			var ind = this.getConnectionIndex(cellId);
-			return this.connections[ind];
+		getConnection : function(index){
+			return this.connections[index];
 		},
 		
 		//Should not be using indices for connections in the model.. move to the view
@@ -87,12 +110,15 @@ LibMapperModel.prototype = {
 
 
 
-// Connection constructor
-function Connection(row, col)
+//+++++++++++++++++++++++++++++++++++++++++++ //
+//				Connection Class			  //		 
+//+++++++++++++++++++++++++++++++++++++++++++ //
+
+function Connection(src, dst)
 {	
-	this.id = "connection" + row + "," + col;
-	this.src = "";
-	this.dest = "";
+	//this.id = "connection" + row + "," + col;
+	this.src = src;
+	this.dst = dst;
 	this.mute = 0;
 	this.mode = "";
 	this.range = [1,1,0,1];
@@ -101,8 +127,31 @@ function Connection(row, col)
 	this.clipMax = ""; 
 };
 
-// Signal constructor 
-function Signal(name)
+// +++++++++++++++++++++++++++++++++++++++++++ //
+//			  Source Signal Class			   //		 
+// +++++++++++++++++++++++++++++++++++++++++++ //
+
+function SourceSignal(name)
 {
+	this.id = SourceSignal.idCounter++;
 	this.name=name;
 };
+SourceSignal.idCounter = 0;
+
+
+// +++++++++++++++++++++++++++++++++++++++++++ //
+//			Destination Signal Class		   //		 
+// +++++++++++++++++++++++++++++++++++++++++++ //
+
+function DestinationSignal(name)
+{
+	this.id = DestinationSignal.idCounter++;
+	this.name=name;
+};
+DestinationSignal.idCounter = 0;
+
+
+
+
+
+

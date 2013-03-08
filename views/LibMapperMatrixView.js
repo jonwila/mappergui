@@ -10,6 +10,17 @@ function LibMapperMatrixView(container, model)
 
 	this._container = $(container);
 	this.model = model;
+
+	
+	// handle all events from controller
+	$(this._container).on("updateView", function(){
+		alert("updateview");
+	});
+	// END Controller
+	
+	this.srcSignals = new Array();		// reference to signals in model and extra metadata
+	this.dstSignals = new Array();		// reference to signals in model and extra metadata
+	this.cells = new Array();
 	
 	this.svg;
 	this.svgRowLabels;
@@ -44,7 +55,7 @@ function LibMapperMatrixView(container, model)
 	this.initVerticalScrollbar($("#vScrollbar"));
 	this.initHorizontalScrollBar($("#hScrollbar"));
 
-	
+	this.nCellIds = 0;
 }
 
 LibMapperMatrixView.prototype = {
@@ -260,15 +271,12 @@ LibMapperMatrixView.prototype = {
 		
 	},
 	
-	/**
-	 * insert a column at the specified index
-	 * reposition the columns cell and label with index greater than the specified index
-	 * reposition the row labels 
-	 * create the new column (containg cells + label)
-	 * update IDs of all rows that are connected
-	 */
-	addSourceSourceSignal : function (signal, index)
+	addSrcSignal : function (signal, index)
 	{
+		var newSig = new MatrixViewSourceSignal(this.model.cols.length-1);
+		newSig.col = index;
+		this.srcSignals.push(newSig);
+		
 		if(index > this.nCols)
 		{
 			alert("invalid col index");
@@ -276,39 +284,64 @@ LibMapperMatrixView.prototype = {
 		}
 		
 		var i,j;
-		var cell, colLabel, rowLabel;
-		var newCell, newLabel;
-	
 		
-		// reposition cols after the index
-		// change the id's of each cell in the col to match new location in the grid
-
+		// reposition source signals in cols after index
+		for(i=0; i<this.srcSignals.length; i++)
+		{
+			var sig = this.srcSignals[i];
+			if(sig.col >= index)
+				sig.col++;
+		}
+		
+		// reposition the col labels after index		
 		for(j=this.nCols-1; j>=index; j--)	// for each column after index
 		{
-			for(i=0; i<this.nRows; i++)
-			{
-				cell = document.getElementById(makeId(i,j));
-				cell.setAttribute("x",(j+1)*(this.cellWidth+this.cellMargin));	// reposition the cell
-				cell.setAttribute("id", makeId(i, j+1));				// update the id
-			}
-			
-			//reposition the col label
-			colLabel = this.svgColLabels.getElementById("colLabel" + j);
+			var colLabel = this.svgColLabels.getElementById("colLabel" + j);
 			if(colLabel != null)
 			{
 				colLabel.setAttribute("transform","translate(" + ((j+1)*(this.cellWidth+this.cellMargin)+11).toString() + "," + this.labelMargin + ")rotate(90)");
 				colLabel.setAttribute("id", "colLabel"+(j+1));
+				colLabel.setAttribute("data-col", j+1);
 			}
 		}
+		
+	},
+	
+	/**
+	 * insert a column at the specified index
+	 * reposition the columns cell and label with index greater than the specified index
+	 * reposition the row labels 
+	 * create the new column (containng cells + label)
+	 * update IDs of all rows that are connected
+	 */
+	addSourceSignal : function (signal, index)
+	{
+
+		
+		var cell, column, colLabel, rowLabel;	// old cell
+		var newCell, newLabel;					// new cell
+		
+		// reposition cells in cols after index
+		for(i=0; i<this.cells.length; i++)
+		{
+			cell = this.cells[i];
+			column =  parseInt(cell.getAttribute("data-col"));
+			if(column >= index){
+				cell.setAttribute("data-col", column+1);
+				cell.setAttribute("x",(column+1)*(this.cellWidth+this.cellMargin));	// reposition the cell
+			}
+		}
+		
+		
 	
 		// create new cells
 		for(var i=0; i<this.nRows; i++)
 		{
+			// match new cells created with corresponding row signal
+			var rowLabel = this.svgRowLabels.getElementById("rowLabel" + i);		// get the element with the row label
+			
 			// create new cells
-			newCell = this.createCell(i, index);
-			var c2 = document.getElementById("row" + i);
-			var c3 = c2.childNodes[index]; 
-			c2.insertBefore(newCell, c3);
+			this.svg.appendChild(this.createCell(i, index, signal.id, rowLabel.getAttribute("data-dst")));
 		}
 
 		//create new COL Label
@@ -316,15 +349,17 @@ LibMapperMatrixView.prototype = {
 		newLabel.setAttribute("id", "colLabel" + index.toString()  );
 		var xPos = index*(this.cellWidth+this.cellMargin)+11;			// pluss 11 MAKE DYNAMIC!
 		var yPos = this.labelMargin;
-		newLabel.setAttribute("class","label");
+		newLabel.setAttribute("class", "label");
+		newLabel.setAttribute("data-src", signal.id);
+		newLabel.setAttribute("data-col", index);
 		newLabel.setAttribute("transform","translate(" + xPos + "," + yPos + ")rotate(90)");
 		newLabel.appendChild(document.createTextNode(signal.name));	
 		this.svgColLabels.insertBefore(newLabel, this.svgColLabels.childNodes[index]);
 		
 		// update IDs of connections
 		// FIX : separate properly between model/view
-		model.incConnectionColIndicesAfter(index);
 		
+		// model.incConnectionColIndicesAfter(index);
 		
 		// update GUI data
 		this.nCols++;
@@ -349,62 +384,55 @@ LibMapperMatrixView.prototype = {
 		}
 		
 		var i,j;
-		var row, y, cell;
-		var newRow, newRowY, newRowLabel;
-		var rowLabel;
 		
-		// update the existing rows 
-		for(i=this.nRows-1; i>=index; i--)	// for each row after index
+		// reposition existing cells in rows after index
+		for(i=0; i<this.cells.length; i++)											// for each cell
 		{
-			// reposition the y position of the entire row group and label
-			row = this.svg.getElementById("row" + i);
-			y = (i+1)*(this.cellHeight+this.cellMargin);
-			row.setAttribute("transform", "translate(0,"+ y +")");
-			
-			//update row ID
-			row.setAttribute("id", "row" + (i+1));
-			
-			// update the row's label ID
-			rowLabel = this.svgRowLabels.getElementById("rowLabel" + i);
-			if(rowLabel != null){
-				rowLabel.setAttribute("id", "rowLabel" + (i+1));
-				rowLabel.setAttribute("y", y+(this.cellHeight/2)+4);
-			}
-			
-			// update IDs of each cell inside the row
-			for(j=0; j<this.nCols; j++)
-			{
-				// change ID of cells
-				cell = row.childNodes[j];
-				cell.setAttribute("id", i+1 + "," + j);
+			var cell = this.cells[i];												// get the cell 
+			var row = parseInt(cell.getAttribute("data-row"));						// get the cell's row
+			if(row >= index){
+				cell.setAttribute("data-row", row+1);								// store new row number
+				cell.setAttribute("y",(row+1)*(this.cellHeight+this.cellMargin));	// reposition y coordinate
 			}
 		}
 		
-		// create a new row group	
-		newRow = document.createElementNS(this.svgNS,"g");
-		newRowY = index*(this.cellHeight+this.cellMargin);
-		newRow.setAttribute("transform", "translate(0,"+ newRowY +")");
-		newRow.setAttribute("id", "row" + index);
-				
+		// reposition the existing row labels
+		for(i=this.nRows-1; i>=index; i--)											// for each row after index
+		{
+			var rowLabel = this.svgRowLabels.getElementById("rowLabel" + i);		// get the element with the row label
+			var y = (i+1)*(this.cellHeight+this.cellMargin);						// calculate the new y coordinate
+			if(rowLabel != null){
+				rowLabel.setAttribute("id", "rowLabel" + (i+1));					// update the element's ID
+				rowLabel.setAttribute("data-row", i+1);								
+				rowLabel.setAttribute("y", y+(this.cellHeight/2)+4);				// set the new y coordinate + offset to center vertically
+			}
+		}
+		
 		// create new cells for the new row
 		for(j=0; j<this.nCols; j++)
 		{
-			newRow.appendChild(this.createCell(index, j));
+			// match new cells created with corresponding column signal
+			var colLabel = this.svgColLabels.getElementById("colLabel" + j);		// get the element with the row label
+			
+			//create the cell
+			this.svg.appendChild(this.createCell(index, j, colLabel.getAttribute("data-src"), signal.id ));
 		}
-		this.svg.appendChild(newRow);
 		
 		// create row label for the new row
-		newRowLabel = document.createElementNS(this.svgNS,"text");
+		var newRowLabel = document.createElementNS(this.svgNS,"text");
 		newRowLabel.setAttribute("id", "rowLabel" + index.toString()  );
 		newRowLabel.setAttribute("x", this.labelMargin);
-		newRowLabel.setAttribute("y", newRowY+(this.cellHeight/2)+4);		// plus 4 to center vertically MAKE DYNAMIC!
+		newRowLabel.setAttribute("y", (index)*(this.cellHeight+this.cellMargin)+(this.cellHeight/2)+4);		// plus 4 to center vertically MAKE DYNAMIC!
+		newRowLabel.setAttribute("data-dst", signal.id);
+		newRowLabel.setAttribute("data-row", index);
 		newRowLabel.setAttribute("class","label");
 		newRowLabel.appendChild(document.createTextNode(signal.name));	
 		this.svgRowLabels.appendChild(newRowLabel);
 		
 		// update IDs of connections
 		// FIX : separate properly between model/view
-		model.incConnectionRowIndicesAfter(index);
+		
+		//	model.incConnectionRowIndicesAfter(index);
 		
 		// update GUI data		
 		this.nRows++;
@@ -412,41 +440,46 @@ LibMapperMatrixView.prototype = {
 		this.sizeVScrollbar();
 	}, 
 	
-	createCell : function (row, col)
+	createCell : function (row, col, src, dst)
 	{
 		var cell = document.createElementNS(this.svgNS,"rect");
-		cell.setAttribute("id", makeId(row,col));
+		cell.setAttribute("id", this.nextCellId());
+		cell.setAttribute("data-row", row);
+		cell.setAttribute("data-col", col);
+		cell.setAttribute("data-src", src);
+		cell.setAttribute("data-dst", dst);
+		
 		cell.setAttribute("x",col*(this.cellWidth+this.cellMargin));
-		cell.setAttribute("y", 0);
+		cell.setAttribute("y",row*(this.cellHeight+this.cellMargin));
 		cell.setAttribute("rx", this.cellRoundedCorner);
 		cell.setAttribute("ry", this.cellRoundedCorner);
 		cell.setAttribute("width",this.cellWidth);
 		cell.setAttribute("height",this.cellHeight);
 		cell.setAttribute("class","cell_up");
+		
 
 		var _self = this;	// to pass to the instance of LibMApperMatricView to event handlers
 		cell.addEventListener("click", function(evt){
 			_self.onCellClick(evt, _self);
 		});
-		
 		cell.addEventListener("mouseover", function(evt){
 			_self.cellMouseOverHandler(evt, _self);
 		});
 		cell.addEventListener("mouseout", function(evt){
 			_self.cellMouseOverHandler(evt, _self);
 		});
-
+		
+		_self.cells.push(cell);
 		return cell;
 	},
 	
 	/**
 	 * on cell mouseover, highlights corresponding row and columns
-	 * order matters.. I'm styling the row and column first, then the moused over cell
 	 * must handle special cases: if the cell is the selected cell or has a connection
 	 */
 	cellMouseOverHandler : function(evt, _self)    
 	{
-		// keep reference to cell mouse is over
+		// keep reference to cell mouse is over (useful in other methods)
 		if(evt.type == "mouseover")
 			_self.mousedOverCell = evt.target;	
 		else if (evt.type == "mouseout")
@@ -456,28 +489,30 @@ LibMapperMatrixView.prototype = {
 		// columns must be found differently (below)	
 		var row = evt.target.parentNode;	
 		
-		var selectedRow = getRowIndex(evt.target.id);
-		var selectedCol = getColIndex(evt.target.id);
+		var selectedRow = evt.target.getAttribute("data-row");
+		var selectedCol = evt.target.getAttribute("data-col");
 		
-		// style row cells
-		
-		for(var i=0; i<_self.nCols; i++)
+		// style cells
+		for(var i=0; i< this.cells.length; i++)
 		{
-			var curNode = row.childNodes[i];
-			var className = curNode.getAttribute("class");
-			if(className.indexOf("cell_connected") == -1)
+			var curCell = this.cells[i];
+			var curRow = curCell.getAttribute("data-row");;
+			var curCol = curCell.getAttribute("data-col");;
+			if(curRow == selectedRow || curCol == selectedCol)
 			{
-				className = (className.indexOf("cell_selected") == -1)? "" : "cell_selected "; 
-				if(evt.type == "mouseover")
-					row.childNodes[i].setAttribute("class", className + "row_over");
-				else if(evt.type == "mouseout")
-					row.childNodes[i].setAttribute("class",className + "cell_up");
+				var className = curCell.getAttribute("class");
+				if(className.indexOf("cell_connected") == -1)
+				{
+					className = (className.indexOf("cell_selected") == -1)? "" : "cell_selected "; 
+					if(evt.type == "mouseover")
+						curCell.setAttribute("class", className + "row_over");
+					else if(evt.type == "mouseout")
+						curCell.setAttribute("class",className + "cell_up");
+				}
 			}
 		}
 		
 		// style row label
-		
-		//var rowLabel = row.childNodes[model.cols.length];
 		var rowLabel = _self.svgRowLabels.getElementById("rowLabel" + selectedRow);
 		if(rowLabel != null)
 		{
@@ -487,27 +522,8 @@ LibMapperMatrixView.prototype = {
 				rowLabel.setAttribute("class","label");
 		}
 		
-		// style col cells
 	
-		for(var i=0; i<model.rows.length; i++)
-		{
-			var currentId = makeId(i,selectedCol);
-			var colCell = _self.svg.getElementById(currentId);
-			var className = colCell.getAttribute("class"); 
-			if(className.indexOf("cell_connected") == -1)
-			{
-				className = (className.indexOf("cell_selected") == -1)? "" : "cell_selected ";
-				if(evt.type == "mouseover")
-					colCell.setAttribute("class", className+"row_over");
-				else if(evt.type == "mouseout")
-				{
-					colCell.setAttribute("class", className+"cell_up");			
-				}
-			}
-		}
-		
 		// style col label
-		
 		var colLabel = _self.svgColLabels.getElementById("colLabel" + selectedCol);
 		if(colLabel != null)
 		{
@@ -566,29 +582,35 @@ LibMapperMatrixView.prototype = {
 		if(this.selectedCell == null)	
 			return;
 
+		var selectedSrc = this.selectedCell.getAttribute("data-src");
+		var selectedDst = this.selectedCell.getAttribute("data-dst");
+		
+		var connectionIndex = this.model.getConnectionIndex(selectedSrc, selectedDst);
+		
 		// toggle the connection
 		
-		if(this.model.isConnected(this.selectedCell.id))	// is already a connection, so remove it
+		if(connectionIndex == -1)	// not already a connection, create the new connection
 		{
+			this.model.createConnection(selectedSrc, selectedDst);
+			this.selectedCell.setAttribute("class", "cell_connected cell_selected");	//style appropriately for GUI	
+		}
 			
+		else	// is already a connection, so remove it
+		{
 			//FIX Tell the controller we removed the connection
-			var con = this.model.getConnection(this.selectedCell.id);
-			//var src = "foo";
-			//var dest = "bar";
-			this._container.trigger("removeConnection", [con.src, con.dest]);
-			
-			
 			//remove from connections array
-			this.model.removeConnection(this.selectedCell.id);		
-											
+			this.model.removeConnection(connectionIndex);		
+			this._container.trigger("removeConnection", [selectedSrc, selectedDst]);
+			
 			//style the cell
 			
 			if(this.mousedOverCell != null)	//style when mouse is over the toggled cell's row/col
 			{	
-				var mouseRow = getRowIndex(this.mousedOverCell.id);
-				var mouseCol = getColIndex(this.mousedOverCell.id);
-				var selectedRow = getRowIndex(this.selectedCell.id);
-				var selectedCol = getColIndex(this.selectedCell.id);
+				var mouseRow = this.mousedOverCell.getAttribute("data-row");
+				var mouseCol = this.mousedOverCell.getAttribute("data-col");
+				var selectedRow = this.selectedCell.id.getAttribute("data-row");
+				var selectedCol = this.selectedCell.id.getAttribute("data-col");
+				
 				if(mouseRow == selectedRow || mouseCol == selectedCol)
 					this.selectedCell.setAttribute("class", "row_over cell_selected");
 				else	
@@ -596,40 +618,47 @@ LibMapperMatrixView.prototype = {
 			}
 			else	// style when no cell is moused over 
 				this.selectedCell.setAttribute("class", "cell_up cell_selected");
-				
-		
 			
 			
+		}
 		
-		}
-		else	// not already a connection, create the new connection
-		{
-			var row = getRowIndex(this.selectedCell.id);
-			var col = getColIndex(this.selectedCell.id);
-			this.model.createConnection(row,col);
-			this.selectedCell.setAttribute("class", "cell_connected cell_selected");	//style appropriately for GUI	
-		}
 	
+	},
+	
+	// FIX this will not work when we remove signals
+	nextCellId : function (){
+		return "cell" + this.nCellIds++;
+	},
+	getCellIndex : function (id){
+		return (id.substring(4));
+	},
+	
+	
+	render : function(){
+		
+		
 	}
 	
-	
-	
 };
 
 
-
-function toViewBoxString(x, y, w, h){
-		return x.toString() + " " + y.toString() + " " + w.toString() + " " + h.toString();
+function MatrixViewCell(row, col, src, dst)
+{
+	this.id = this.nextCellId();
+	this.row = row;
+	this.col = col;
+	this.src = src;
+	this.dst = dst;
+	this.classname = "";
 };
 
-
-
-//NOT USED YET
-function moveScrollbar(){
-	var remainder = scrollPane.width() - scrollContent.width();
-	var leftVal = scrollContent.css( "margin-left" ) === "auto" ? 0 :
-		parseInt( scrollContent.css( "margin-left" ) );
-	var percentage = Math.round( leftVal / remainder * 100 );
-	scrollbar.slider( "value", percentage );
+function MatrixViewSourceSignal(modelIndex)
+{
+	this.modelIndex = modelIndex;	// reference to the signal object	
+	this.col = 0;
 };
-//
+function MatrixViewDestinationSignal(modelIndex)
+{
+	this.modelIndex = modelIndex;	// reference to the signal object	
+	this.row = 0;
+};

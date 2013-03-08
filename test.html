@@ -29,8 +29,10 @@ function init(){
 	
 	// init with fake data for now
 	var nColsInit = 40, nRowsInit = 40;
-	for(var i=nColsInit; i>0;i--)
-		addSourceSignal(new SourceSignal("Source " + i), 0);
+	for(var i=nColsInit; i>0;i--){
+		var s = new SourceSignal("Source " + i);
+		addSourceSignal(s, 0);
+	}
 	for(var j=nRowsInit; j>0;j--){
 		var sig = new DestinationSignal("Destination " + j);
 		addDestinationSignal(sig, 0);
@@ -59,11 +61,13 @@ function addSourceSignal(sig)
 {
 	model.addSourceSignal(sig);
 	view.addSourceSignal(sig, 0);
+	view.addSrcSignal(sig, 0);
 }
 
 function toggleConnection()
 {
-	view.toggleConnection();
+	//view.toggleConnection();
+	$("#view").trigger("updateView");
 }
 function tempBtnHandler(val)
 {
