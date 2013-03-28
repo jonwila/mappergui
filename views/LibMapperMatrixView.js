@@ -331,8 +331,6 @@ LibMapperMatrixView.prototype = {
 				cell.setAttribute("x",(column+1)*(this.cellWidth+this.cellMargin));	// reposition the cell
 			}
 		}
-		
-		
 	
 		// create new cells
 		for(var i=0; i<this.nRows; i++)
@@ -641,6 +639,9 @@ LibMapperMatrixView.prototype = {
 	
 };
 
+function toViewBoxString(x, y, w, h){
+	return x.toString() + " " + y.toString() + " " + w.toString() + " " + h.toString();
+};
 
 function MatrixViewCell(row, col, src, dst)
 {
