@@ -36,7 +36,7 @@ function init(){
 		addDestinationSignal(sig, 0);
 	}
 
-	// controller (from view) 
+	// controller (from view)  
 	$("#view").on("removeConnection", function(e, src, dst){
 		var connectionIndex = model.getConnectionIndex(src, dst);
 		if(connectionIndex >= 0)
