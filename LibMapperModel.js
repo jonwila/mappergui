@@ -135,6 +135,9 @@ function SourceSignal(name)
 {
 	this.id = SourceSignal.idCounter++;
 	this.name=name;
+	// direction, length, min, max, 
+	// strings: type, units
+	// metadata
 };
 SourceSignal.idCounter = 0;
 
@@ -147,6 +150,9 @@ function DestinationSignal(name)
 {
 	this.id = DestinationSignal.idCounter++;
 	this.name=name;
+	//strings: host, 
+	// port, connections in, connections out, inputs, outputs, links in, links out
+	
 };
 DestinationSignal.idCounter = 0;
 

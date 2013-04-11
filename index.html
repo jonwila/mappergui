@@ -36,9 +36,14 @@ function init(){
 		addDestinationSignal(sig, 0);
 	}
 
-	// controller data
-	$("#view").on("removeConnection", function(e, src, dest){
-		alert("removeConnection '" + src + "' from '" + dest + "'" );
+	// controller (from view) 
+	$("#view").on("removeConnection", function(e, src, dst){
+		var connectionIndex = model.getConnectionIndex(src, dst);
+		if(connectionIndex >= 0)
+			model.removeConnection(connectionIndex);
+	});
+	$("#view").on("createConnection", function(e, src, dst){
+		model.createConnection(src, dst);
 	});
 	
 
@@ -61,10 +66,6 @@ function addSourceSignal(sig)
 	view.addSourceSignal(sig, 0);
 }
 
-function toggleConnection()
-{
-	view.toggleConnection();
-}
 function tempBtnHandler(val)
 {
 		if(val=="row")
@@ -81,7 +82,6 @@ function tempBtnHandler(val)
 
 <body onload="init()">
 <div style="margin: 0 auto;">
-	<button onclick="toggleConnection()">Toggle</button>&nbsp;&nbsp;&nbsp;
 	<button onclick="tempBtnHandler('row')">Add 5 Rows at 0</button>
 	<!-- <INPUT TYPE="text" NAME="inputbox" id="inputbox" VALUE="0" maxlength="3"> -->
 	<button onclick="tempBtnHandler('col')">Add 5 Col at 0</button><br /><br />
@@ -92,12 +92,6 @@ function tempBtnHandler(val)
 </div>
 
 <p id="out"></p>
-
-
-
-
-
-
 
 
 </body>

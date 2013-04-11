@@ -11,13 +11,6 @@ function LibMapperMatrixView(container, model)
 	this._container = $(container);
 	this.model = model;
 
-	
-	// handle all events from controller
-	$(this._container).on("updateView", function(){
-		alert("updateview");
-	});
-	// END Controller
-	
 	this.srcSignals = new Array();		// reference to signals in model and extra metadata
 	this.dstSignals = new Array();		// reference to signals in model and extra metadata
 	this.cells = new Array();
@@ -59,18 +52,37 @@ function LibMapperMatrixView(container, model)
 }
 
 LibMapperMatrixView.prototype = {
-		
-		
+	
+
+	updateView : function ()
+	{
+			
+	},
+	
 	init : function (container) 
 	{ 
-
 		var div;
+		var _self = this;	// to pass to the instance of LibMApperMatricView to event handlers
+		
+		// button bar
+		div = document.createElement("div");
+		div.setAttribute("id", "buttonBar");
+		div.setAttribute("style", "margin-bottom: 5px; margin-left: 16px;");
+		
+		//toggle connection button
+		var btn = document.createElement("button");
+		btn.innerHTML = "Toggle";
+		btn.addEventListener("click", function(evt){
+			_self.toggleConnection();
+		});
+		div.appendChild(btn);
+		container.appendChild(div);
+		
 		
 		//h scrollbar
 		div = document.createElement("div");
 		div.setAttribute("id", "hScrollbar");
 		container.appendChild(div);
-		
 		
 		// a wrapper div to hold vscroll, grid + row labels
 		var wrapper1 = document.createElement("div");
@@ -270,20 +282,23 @@ LibMapperMatrixView.prototype = {
 		$("#vScrollbar").find(".ui-slider-range").css({bottom:-sliderMargin});//position the slider-range div at the top of the slider container
 		
 	},
-	
-	addSrcSignal : function (signal, index)
+
+	/**
+	 * insert a column at the specified index
+	 * reposition the columns cell and label with index greater than the specified index
+	 * reposition the row labels 
+	 * create the new column (containng cells + label)
+	 * update IDs of all rows that are connected
+	 */
+	addSourceSignal : function (signal, index)
 	{
-		var newSig = new MatrixViewSourceSignal(this.model.cols.length-1);
+		var newSig = new MatrixViewSourceSignal(signal);
 		newSig.col = index;
 		this.srcSignals.push(newSig);
 		
-		if(index > this.nCols)
-		{
-			alert("invalid col index");
-			return;
-		}
-		
 		var i,j;
+		var cell, column, colLabel, rowLabel;	// old cell
+		var newCell, newLabel;					// new cell
 		
 		// reposition source signals in cols after index
 		for(i=0; i<this.srcSignals.length; i++)
@@ -304,22 +319,6 @@ LibMapperMatrixView.prototype = {
 				colLabel.setAttribute("data-col", j+1);
 			}
 		}
-		
-	},
-	
-	/**
-	 * insert a column at the specified index
-	 * reposition the columns cell and label with index greater than the specified index
-	 * reposition the row labels 
-	 * create the new column (containng cells + label)
-	 * update IDs of all rows that are connected
-	 */
-	addSourceSignal : function (signal, index)
-	{
-
-		
-		var cell, column, colLabel, rowLabel;	// old cell
-		var newCell, newLabel;					// new cell
 		
 		// reposition cells in cols after index
 		for(i=0; i<this.cells.length; i++)
@@ -354,11 +353,6 @@ LibMapperMatrixView.prototype = {
 		newLabel.appendChild(document.createTextNode(signal.name));	
 		this.svgColLabels.insertBefore(newLabel, this.svgColLabels.childNodes[index]);
 		
-		// update IDs of connections
-		// FIX : separate properly between model/view
-		
-		// model.incConnectionColIndicesAfter(index);
-		
 		// update GUI data
 		this.nCols++;
 		this.contentW = this.nCols*(this.cellWidth+this.cellMargin);
@@ -383,15 +377,11 @@ LibMapperMatrixView.prototype = {
 		
 		var i,j;
 		
-		// reposition existing cells in rows after index
-		for(i=0; i<this.cells.length; i++)											// for each cell
+		for(i=0; i<this.dstSignals.length; i++)
 		{
-			var cell = this.cells[i];												// get the cell 
-			var row = parseInt(cell.getAttribute("data-row"));						// get the cell's row
-			if(row >= index){
-				cell.setAttribute("data-row", row+1);								// store new row number
-				cell.setAttribute("y",(row+1)*(this.cellHeight+this.cellMargin));	// reposition y coordinate
-			}
+			var sig = this.dstSignals[i];
+			if(sig.row >= index)
+				sig.row++;
 		}
 		
 		// reposition the existing row labels
@@ -403,6 +393,17 @@ LibMapperMatrixView.prototype = {
 				rowLabel.setAttribute("id", "rowLabel" + (i+1));					// update the element's ID
 				rowLabel.setAttribute("data-row", i+1);								
 				rowLabel.setAttribute("y", y+(this.cellHeight/2)+4);				// set the new y coordinate + offset to center vertically
+			}
+		}
+		
+		// reposition cells in rows after index
+		for(i=0; i<this.cells.length; i++)											// for each cell
+		{
+			var cell = this.cells[i];												// get the cell 
+			var row = parseInt(cell.getAttribute("data-row"));						// get the cell's row
+			if(row >= index){
+				cell.setAttribute("data-row", row+1);								// store new row number
+				cell.setAttribute("y",(row+1)*(this.cellHeight+this.cellMargin));	// reposition y coordinate
 			}
 		}
 		
@@ -426,11 +427,6 @@ LibMapperMatrixView.prototype = {
 		newRowLabel.setAttribute("class","label");
 		newRowLabel.appendChild(document.createTextNode(signal.name));	
 		this.svgRowLabels.appendChild(newRowLabel);
-		
-		// update IDs of connections
-		// FIX : separate properly between model/view
-		
-		//	model.incConnectionRowIndicesAfter(index);
 		
 		// update GUI data		
 		this.nRows++;
@@ -583,21 +579,19 @@ LibMapperMatrixView.prototype = {
 		var selectedSrc = this.selectedCell.getAttribute("data-src");
 		var selectedDst = this.selectedCell.getAttribute("data-dst");
 		
-		var connectionIndex = this.model.getConnectionIndex(selectedSrc, selectedDst);
 		
 		// toggle the connection
 		
-		if(connectionIndex == -1)	// not already a connection, create the new connection
+		if(this.model.isConnected(selectedSrc, selectedDst) == false) // not already a connection, create the new connection
 		{
-			this.model.createConnection(selectedSrc, selectedDst);
-			this.selectedCell.setAttribute("class", "cell_connected cell_selected");	//style appropriately for GUI	
+			// trigger create connection event
+			this._container.trigger("createConnection", [selectedSrc, selectedDst]);
+			// style appropriately for GUI
+			this.selectedCell.setAttribute("class", "cell_connected cell_selected");		
 		}
-			
 		else	// is already a connection, so remove it
 		{
-			//FIX Tell the controller we removed the connection
-			//remove from connections array
-			this.model.removeConnection(connectionIndex);		
+			// trigger remove connection event
 			this._container.trigger("removeConnection", [selectedSrc, selectedDst]);
 			
 			//style the cell
@@ -616,8 +610,6 @@ LibMapperMatrixView.prototype = {
 			}
 			else	// style when no cell is moused over 
 				this.selectedCell.setAttribute("class", "cell_up cell_selected");
-			
-			
 		}
 		
 	
@@ -643,6 +635,11 @@ function toViewBoxString(x, y, w, h){
 	return x.toString() + " " + y.toString() + " " + w.toString() + " " + h.toString();
 };
 
+
+//+++++++++++++++++++++++++++++++++++++++++++ //
+//		  	   View's Cell Class		  	  //		 
+//+++++++++++++++++++++++++++++++++++++++++++ //
+
 function MatrixViewCell(row, col, src, dst)
 {
 	this.id = this.nextCellId();
@@ -653,13 +650,22 @@ function MatrixViewCell(row, col, src, dst)
 	this.classname = "";
 };
 
-function MatrixViewSourceSignal(modelIndex)
+//+++++++++++++++++++++++++++++++++++++++++++ //
+//		  View's Source Signal Class		  //		 
+//+++++++++++++++++++++++++++++++++++++++++++ //
+
+function MatrixViewSourceSignal(signal)
 {
-	this.modelIndex = modelIndex;	// reference to the signal object	
+	this.id = signal.id;	// reference to the signal object		
 	this.col = 0;
 };
-function MatrixViewDestinationSignal(modelIndex)
+
+//+++++++++++++++++++++++++++++++++++++++++++ //
+//		View's Destination  Signal Class	  //		 
+//+++++++++++++++++++++++++++++++++++++++++++ //
+
+function MatrixViewDestinationSignal(signal)
 {
-	this.modelIndex = modelIndex;	// reference to the signal object	
+	this.id = signal.id;	// reference to the signal object	
 	this.row = 0;
 };
