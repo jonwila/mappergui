@@ -116,6 +116,8 @@ LibMapperMatrixView.prototype = {
 		
 		container.appendChild(wrapper1);
 		
+		// zooming scroll bar... !!
+		
 		// svg column labels
 		this.svgColLabels = document.createElementNS(this.svgNS, "svg");
 		this.svgColLabels.setAttribute("id", "svgCols");
