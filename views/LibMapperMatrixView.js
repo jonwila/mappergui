@@ -22,7 +22,7 @@ function LibMapperMatrixView(container, model)
 	this.svgNSxlink = "http://www.w3.org/1999/xlink";
 
 	this.svgWidth = 600;
-	this.svgHeight = 400;
+	this.svgHeight = 600;
 	this.colLabelsH = 100;
 	this.rowLabelsW = 200;
 	
@@ -30,6 +30,8 @@ function LibMapperMatrixView(container, model)
 	this.vboxH = this.svgHeight;
 	this.vboxX = 0;
 	this.vboxY = 0;
+	
+	this.zoomIncrement = 50;
 	
 	this.cellWidth = 32;
 	this.cellHeight = 32;
@@ -69,13 +71,32 @@ LibMapperMatrixView.prototype = {
 		div.setAttribute("id", "buttonBar");
 		div.setAttribute("style", "margin-bottom: 5px; margin-left: 16px;");
 		
+		var btn;
+		
 		//toggle connection button
-		var btn = document.createElement("button");
+		btn = document.createElement("button");
 		btn.innerHTML = "Toggle";
 		btn.addEventListener("click", function(evt){
 			_self.toggleConnection();
 		});
 		div.appendChild(btn);
+		
+		//zoom in button
+		btn = document.createElement("button");
+		btn.innerHTML = "Zoom IN";
+		btn.addEventListener("click", function(evt){
+			_self.zoomIn();
+		});
+		div.appendChild(btn);
+			
+		//zoom out button
+		btn = document.createElement("button");
+		btn.innerHTML = "Zoom OUT";
+		btn.addEventListener("click", function(evt){
+			_self.zoomOut();
+		});
+		div.appendChild(btn);
+			
 		container.appendChild(div);
 		
 		
@@ -116,7 +137,7 @@ LibMapperMatrixView.prototype = {
 		
 		container.appendChild(wrapper1);
 		
-		// zooming scroll bar... !!
+		// zooming scroll bar
 		
 		// svg column labels
 		this.svgColLabels = document.createElementNS(this.svgNS, "svg");
@@ -616,6 +637,34 @@ LibMapperMatrixView.prototype = {
 		
 	
 	},
+	
+	
+	zoomIn : function(){
+		if(this.vboxW > 250){
+			this.vboxW -= this.zoomIncrement;
+			this.vboxH -= this.zoomIncrement;
+			this.resetViewBoxes();
+			this.sizeHScrollbar();
+			this.sizeVScrollbar();
+		}
+	},
+	
+	zoomOut : function(){
+		if(this.vboxW <= (this.nCols*(this.cellWidth+this.cellMargin))-this.zoomIncrement){
+			this.vboxW += this.zoomIncrement;
+			this.vboxH += this.zoomIncrement;
+			this.resetViewBoxes();
+			this.sizeHScrollbar();
+			this.sizeVScrollbar();
+		}
+	},
+	
+	resetViewBoxes : function(){
+		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxX, this.vboxY, this.vboxW, this.vboxH));
+		this.svgColLabels.setAttribute("viewBox", toViewBoxString(this.vboxX, 0, this.vboxW, this.colLabelsH));
+		this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxY, this.rowLabelsW, this.vboxH));
+	},
+	
 	
 	// FIX this will not work when we remove signals
 	nextCellId : function (){
