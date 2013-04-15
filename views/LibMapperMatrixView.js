@@ -22,7 +22,8 @@ function LibMapperMatrixView(container, model)
 	this.svgNSxlink = "http://www.w3.org/1999/xlink";
 
 	this.svgWidth = 600;
-	this.svgHeight = 600;
+	this.svgHeight = 400;
+	this.aspect = this.svgWidth/this.svgHeight;
 	this.colLabelsH = 100;
 	this.rowLabelsW = 200;
 	
@@ -114,7 +115,7 @@ LibMapperMatrixView.prototype = {
 		div.setAttribute("id", "vScrollbar");
 		wrapper1.appendChild(div);
 		
-		// svg grid
+		// svg canvas
 		this.svg = document.createElementNS(this.svgNS,"svg");
 		this.svg.setAttribute("id", "svgGrid");
 		this.svg.setAttribute("xmlns", this.svgNS);
@@ -122,6 +123,7 @@ LibMapperMatrixView.prototype = {
 		this.svg.setAttribute("width", this.svgWidth);
 		this.svg.setAttribute("height", this.svgHeight);
 		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxX, this.vboxY, this.vboxW, this.vboxH));
+		this.svg.setAttribute("preserveAspectRatio", "none");
 		this.svg.setAttribute("style", "float:left;margin-left: 5px");
 		wrapper1.appendChild(this.svg);	
 		
@@ -133,6 +135,7 @@ LibMapperMatrixView.prototype = {
 		this.svgRowLabels.setAttribute("width", this.rowLabelsW);
 		this.svgRowLabels.setAttribute("height", this.svgHeight);
 		this.svgRowLabels.setAttribute("style", "float:left;");
+		this.svgRowLabels.setAttribute("preserveAspectRatio", "none");
 		wrapper1.appendChild(this.svgRowLabels);
 		
 		container.appendChild(wrapper1);
@@ -147,6 +150,8 @@ LibMapperMatrixView.prototype = {
 		this.svgColLabels.setAttribute("width", this.svgWidth);
 		this.svgColLabels.setAttribute("height", this.colLabelsH);
 		this.svgColLabels.setAttribute("style", "clear:both; margin-left:20px;");
+		this.svgColLabels.setAttribute("preserveAspectRatio", "none");
+		
 		container.appendChild(this.svgColLabels);
 		
 	},
@@ -211,15 +216,15 @@ LibMapperMatrixView.prototype = {
 		
 		if(difference>0){	// determine the handle's size
 			proportion = difference / this.contentW;
-			handleHeight = Math.round((1-proportion)* this.vboxW );//set the proportional height - round it to make sure everything adds up correctly later on
+			handleHeight = Math.round((1-proportion)* this.svgWidth );//set the proportional height - round it to make sure everything adds up correctly later on
 		}
 		else{
 			handleHeight = this.svgWidth;
 		}	
-		handleHeight -= handleHeight%2;		//if odd, substract 1 to make even. If even substract nothing
+		handleHeight -= handleHeight%2;		//if odd, subtract 1 to make even. If even subtract nothing
 		
 		$("#hScrollbar").find(".ui-slider-handle").css({width:handleHeight,'margin-left':-0.5*handleHeight});
-		var origSliderHeight = this.vboxW;//read the original slider height
+		var origSliderHeight = this.svgWidth;//read the original slider height
 		var sliderHeight = origSliderHeight - handleHeight ;//the height through which the handle can move needs to be the original height minus the handle height
 		var sliderMargin =  (origSliderHeight - sliderHeight)*0.5;//so the slider needs to have both top and bottom margins equal to half the difference
 		$("#hScrollbar").find(".ui-slider").css({width:sliderHeight,'margin-left':sliderMargin});//set the slider height and margins
@@ -289,7 +294,7 @@ LibMapperMatrixView.prototype = {
 		if(difference>0) //if the scrollbar is needed, set it up...
 		{
 			proportion = difference / this.contentH;
-			handleHeight = Math.round((1-proportion)* this.vboxH );//set the proportional height - round it to make sure everything adds up correctly later on
+			handleHeight = Math.round((1-proportion)* this.svgHeight );//set the proportional height - round it to make sure everything adds up correctly later on
 		}
 		else
 		{
@@ -298,7 +303,7 @@ LibMapperMatrixView.prototype = {
 		handleHeight -= handleHeight%2;		//if odd, substract 1 to make even. If even substract nothing
 		
 		$("#vScrollbar").find(".ui-slider-handle").css({height:handleHeight,'margin-bottom':-0.5*handleHeight});
-		var origSliderHeight = this.vboxH;//read the original slider height
+		var origSliderHeight = this.svgHeight;//read the original slider height
 		var sliderHeight = origSliderHeight - handleHeight ;//the height through which the handle can move needs to be the original height minus the handle height
 		var sliderMargin =  (origSliderHeight - sliderHeight)*0.5;//so the slider needs to have both top and bottom margins equal to half the difference
 		$("#vScrollbar").find(".ui-slider").css({height:sliderHeight,'margin-top':sliderMargin});//set the slider height and margins
@@ -642,7 +647,7 @@ LibMapperMatrixView.prototype = {
 	zoomIn : function(){
 		if(this.vboxW > 250){
 			this.vboxW -= this.zoomIncrement;
-			this.vboxH -= this.zoomIncrement;
+			this.vboxH -= this.zoomIncrement/this.aspect;
 			this.resetViewBoxes();
 			this.sizeHScrollbar();
 			this.sizeVScrollbar();
@@ -650,13 +655,17 @@ LibMapperMatrixView.prototype = {
 	},
 	
 	zoomOut : function(){
-		if(this.vboxW <= (this.nCols*(this.cellWidth+this.cellMargin))-this.zoomIncrement){
+		if(this.vboxW <= this.contentW-this.zoomIncrement){
 			this.vboxW += this.zoomIncrement;
-			this.vboxH += this.zoomIncrement;
-			this.resetViewBoxes();
-			this.sizeHScrollbar();
-			this.sizeVScrollbar();
+			this.vboxH += this.zoomIncrement/this.aspect;
 		}
+		else{
+			this.vboxW = this.contentW;
+			this.vboxH = this.contentW/this.aspect;
+		}
+		this.resetViewBoxes();
+		this.sizeHScrollbar();
+		this.sizeVScrollbar();
 	},
 	
 	resetViewBoxes : function(){
