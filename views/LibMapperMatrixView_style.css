@@ -22,6 +22,8 @@ svg{background: none;}
 #hScrollbar .ui-slider-range {position:absolute;width:100%;background-color:lightgrey}
 #hScrollbar .ui-widget-header{background: none;}
 
+#hZoomSlider {margin-left: 15px}
+	
 a, a:active, a:visited { color: #607890; text-decoration: none; outline-color: -moz-use-text-color; outline-style: none; outline-width: medium; }
 a:hover { color: #036; }
 

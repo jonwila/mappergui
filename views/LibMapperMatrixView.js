@@ -50,7 +50,7 @@ function LibMapperMatrixView(container, model)
 	this.init(container);
 	this.initVerticalScrollbar($("#vScrollbar"));
 	this.initHorizontalScrollBar($("#hScrollbar"));
-	//this.initHorizontalZoomSlider($("#hZoomSlider"));
+	this.initHorizontalZoomSlider($("#hZoomSlider"));
 
 	this.nCellIds = 0;
 	
@@ -141,8 +141,6 @@ LibMapperMatrixView.prototype = {
 		this.svg.setAttribute("style", "float:left;margin-left: 5px");
 		wrapper1.appendChild(this.svg);	
 		
-		
-		
 		// svg row labels
 		this.svgRowLabels = document.createElementNS(this.svgNS, "svg");
 		this.svgRowLabels.setAttribute("id", "svgRows");
@@ -156,7 +154,11 @@ LibMapperMatrixView.prototype = {
 		
 		container.appendChild(wrapper1);
 		
-		// zooming scroll bar
+		// h zooming scroll bar
+		div = document.createElement("div");
+		div.setAttribute("id", "hZoomSlider");
+		div.setAttribute("style", "500px");
+		container.appendChild(div);
 		
 		// svg column labels
 		this.svgColLabels = document.createElementNS(this.svgNS, "svg");
@@ -171,7 +173,26 @@ LibMapperMatrixView.prototype = {
 		container.appendChild(this.svgColLabels);
 		
 	},
+
+
+	initHorizontalZoomSlider : function ()
+	{
+		var _self = this;
+		$("#hZoomSlider").width(this.svgWidth);
 		
+		 $( "#hZoomSlider" ).slider({
+		      range: true,
+		      min: 0,
+		      max: this.contentW,
+		      values: [ 75, 300 ],
+		      slide: function( event, ui ) {
+		        $( "#amount2" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
+		      }
+		    });
+		    //$( "#amount2" ).val( "$" + $( "#hZoomSlider" ).slider( "values", 0 ) +
+		     // " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
+	},
+	
 	initHorizontalScrollBar : function ($bar)
 	{
 		var _self = this;
