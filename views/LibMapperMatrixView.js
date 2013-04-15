@@ -36,7 +36,7 @@ function LibMapperMatrixView(container, model)
 	
 	this.cellWidth = 32;
 	this.cellHeight = 32;
-	this.cellRoundedCorner = 4;
+	this.cellRoundedCorner = 0;
 	this.cellMargin = 1;
 	this.labelMargin = 5;
 	
@@ -50,22 +50,37 @@ function LibMapperMatrixView(container, model)
 	this.init(container);
 	this.initVerticalScrollbar($("#vScrollbar"));
 	this.initHorizontalScrollBar($("#hScrollbar"));
+	//this.initHorizontalZoomSlider($("#hZoomSlider"));
 
 	this.nCellIds = 0;
+	
+	
+	//Keyboard handlers
+	document.onkeyup = function(e){
+		_self.keyboardHandler(e, _self);
+	};
+	/**
+	 * Disables my keyboard shortcuts from moving the browser's scroll bar 
+	 http://stackoverflow.com/questions/2020414/how-to-disable-page-scrolling-in-ff-with-arrow-keys
+	 */
+	document.onkeydown = function(e) {
+	    var k = e.keyCode;
+	    if((k >= 37 && k <= 40) || k == 32) {
+	        return false;
+	    }
+	};
+	
+		
 }
 
 LibMapperMatrixView.prototype = {
-	
 
-	updateView : function ()
-	{
-			
-	},
 	
+		
 	init : function (container) 
 	{ 
 		var div;
-		var _self = this;	// to pass to the instance of LibMApperMatricView to event handlers
+		var _self = this;	// to pass to the instance of LibMApperMatrixView to event handlers
 		
 		// button bar
 		div = document.createElement("div");
@@ -100,7 +115,6 @@ LibMapperMatrixView.prototype = {
 			
 		container.appendChild(div);
 		
-		
 		//h scrollbar
 		div = document.createElement("div");
 		div.setAttribute("id", "hScrollbar");
@@ -126,6 +140,8 @@ LibMapperMatrixView.prototype = {
 		this.svg.setAttribute("preserveAspectRatio", "none");
 		this.svg.setAttribute("style", "float:left;margin-left: 5px");
 		wrapper1.appendChild(this.svg);	
+		
+		
 		
 		// svg row labels
 		this.svgRowLabels = document.createElementNS(this.svgNS, "svg");
@@ -480,7 +496,7 @@ LibMapperMatrixView.prototype = {
 		cell.setAttribute("class","cell_up");
 		
 
-		var _self = this;	// to pass to the instance of LibMApperMatricView to event handlers
+		var _self = this;	// to pass to the instance of LibMapperMatrixView to event handlers
 		cell.addEventListener("click", function(evt){
 			_self.onCellClick(evt, _self);
 		});
@@ -493,6 +509,17 @@ LibMapperMatrixView.prototype = {
 		
 		_self.cells.push(cell);
 		return cell;
+	},
+	
+	getCellByPos : function (row, col)
+	{
+		for(var i=0; i<this.cells.length; i++){
+			if(this.cells[i].getAttribute('data-row') == row && this.cells[i].getAttribute('data-col') == col){
+				return this.cells[i];
+			}
+		}
+		if(i==this.cells.length)
+			return null;
 	},
 	
 	/**
@@ -628,8 +655,8 @@ LibMapperMatrixView.prototype = {
 			{	
 				var mouseRow = this.mousedOverCell.getAttribute("data-row");
 				var mouseCol = this.mousedOverCell.getAttribute("data-col");
-				var selectedRow = this.selectedCell.id.getAttribute("data-row");
-				var selectedCol = this.selectedCell.id.getAttribute("data-col");
+				var selectedRow = this.selectedCell.getAttribute("data-row");
+				var selectedCol = this.selectedCell.getAttribute("data-col");
 				
 				if(mouseRow == selectedRow || mouseCol == selectedCol)
 					this.selectedCell.setAttribute("class", "row_over cell_selected");
@@ -675,19 +702,89 @@ LibMapperMatrixView.prototype = {
 	},
 	
 	
+	keyboardHandler: function (e, _self)
+	{
+		if(_self.nCols == 0 || _self.nRows == 0)
+			return;
+	
+		// enter or space to toggle a connection
+		if(e.keyCode == 13 || e.keyCode == 32)	
+		{
+			if(this.selectedCell != null)
+				_self.toggleConnection();
+		}	
+		
+		// movement arrows to move the selected cell
+		else if (e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40)	
+		{
+			if(_self.selectedCell != null)	// cases where there is a previously selected cell
+			{
+				removeCellClass("cell_selected", _self.selectedCell);
+				var currentPos = [parseInt(_self.selectedCell.getAttribute('data-row')), parseInt(_self.selectedCell.getAttribute('data-col'))];
+				
+				switch(e.keyCode)	
+				{
+					case 37:	// left
+						if(currentPos[1] > 0)
+							_self.selectedCell = _self.getCellByPos(currentPos[0], currentPos[1]-1);
+						else
+							_self.selectedCell = _self.getCellByPos(currentPos[0], _self.nCols-1);
+					  break;
+					case 38:	// up
+						if(currentPos[0] > 0)
+							_self.selectedCell = _self.getCellByPos(currentPos[0]-1, currentPos[1]);
+						else
+							_self.selectedCell = _self.getCellByPos(_self.nRows-1, currentPos[1]);
+					  break;
+					case 39:	// right
+						if(currentPos[1] < _self.nCols-1)
+							_self.selectedCell = _self.getCellByPos(currentPos[0], currentPos[1]+1);
+						else
+							_self.selectedCell = _self.getCellByPos(currentPos[0], 0);
+					  break;
+					case 40:	// down
+						if(currentPos[0] < _self.nRows-1)
+							_self.selectedCell = _self.getCellByPos(currentPos[0]+1, currentPos[1]);
+						else
+							_self.selectedCell = _self.getCellByPos(0, currentPos[1]);
+					  break;
+				}
+				
+			}
+			else	// cases where there is no selected cell
+			{
+				switch(e.keyCode)	
+				{
+					case 37:	// left 
+						_self.selectedCell = _self.getCellByPos(0,_self.nCols-1);
+					  break;
+					case 38:	// up
+						_self.selectedCell = _self.getCellByPos(_self.nRows-1,0);
+					  break;
+					case 39:	// right
+						_self.selectedCell = _self.getCellByPos(0,0);
+					  break;
+					case 40:	// down
+						_self.selectedCell = _self.getCellByPos(0,0);
+					  break;
+				}
+			}
+			
+			addCellClass("cell_selected", _self.selectedCell);
+			
+		}
+	},
+	
+	
 	// FIX this will not work when we remove signals
 	nextCellId : function (){
 		return "cell" + this.nCellIds++;
 	},
 	getCellIndex : function (id){
 		return (id.substring(4));
-	},
-	
-	
-	render : function(){
-		
-		
 	}
+	
+	
 	
 };
 

@@ -1,108 +1,60 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html>
+<!doctype html>
+ 
+<html lang="en">
 <head>
+  <meta charset="utf-8" />
+  <title>jQuery UI Slider - Vertical range slider</title>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
+  <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+  <script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
+  <link rel="stylesheet" href="/resources/demos/style.css" />
+  <script>
+  $(function() {
+    $( "#vZoomSlider" ).slider({
+      orientation: "vertical",
+      range: true,
+      values: [ 17, 67 ],
+      slide: function( event, ui ) {
+        $( "#amount" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
+      }
+    });
+    $( "#amount" ).val( "$" + $( "#vZoomSlider" ).slider( "values", 0 ) +
+      " - $" + $( "#vZoomSlider" ).slider( "values", 1 ) );
+  });
 
-<title>LibMapper Matrix View</title>
+  $(function() {
+	    $( "#hZoomSlider" ).slider({
+	      range: true,
+	      min: 0,
+	      max: 500,
+	      values: [ 75, 300 ],
+	      slide: function( event, ui ) {
+	        $( "#amount2" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
+	      }
+	    });
+	    $( "#amount2" ).val( "$" + $( "#hZoomSlider" ).slider( "values", 0 ) +
+	      " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
+	  });
 
-<script src="LibMapperModel.js"></script>
-<script src="views/LibMapperMatrixView.js"></script>
-<script src="LibMapperGUIController.js"></script>
-<script src="js/Signal.js"></script>
-
-<!-- jQueryUI slider -->	
-<link rel="stylesheet" href="css/ui-lightness/jquery-ui-1.10.0.custom.css" />
-<script src="js/jquery-1.9.0.js"></script>
-<script src="js/jquery-ui-1.10.0.custom.js"></script>
-
-<!-- View's CSS -->
-<link rel="stylesheet" href="views/LibMapperMatrixView_style.css" />
-
-
-<script>
-
-var model, view;
-
-function init(){
-
-	model = new LibMapperModel();
-	view  = new  LibMapperMatrixView(document.getElementById("view"), model);
-	
-	// init with fake data for now
-	var nColsInit = 40, nRowsInit = 40;
-	for(var i=nColsInit; i>0;i--){
-		var s = new SourceSignal("Source " + i);
-		addSourceSignal(s, 0);
-	}
-	for(var j=nRowsInit; j>0;j--){
-		var sig = new DestinationSignal("Destination " + j);
-		addDestinationSignal(sig, 0);
-	}
-
-	// controller data
-	$("#view").on("removeConnection", function(e, src, dest){
-		alert("removeConnection '" + src + "' from '" + dest + "'" );
-	});
-	
-
-	
-}
-
-function update(event){
-	alert("yes");
-}
-
-function addDestinationSignal(sig)
-{
-	model.addDestinationSignal(sig);
-	view.addDestinationSignal(sig, 0)
-}
-
-function addSourceSignal(sig)
-{
-	model.addSourceSignal(sig);
-	view.addSourceSignal(sig, 0);
-	view.addSrcSignal(sig, 0);
-}
-
-function toggleConnection()
-{
-	//view.toggleConnection();
-	$("#view").trigger("updateView");
-}
-function tempBtnHandler(val)
-{
-		if(val=="row")
-			for(var j=0; j<1;j++)
-				addDestinationSignal(new DestinationSignal("New Row (" + (model.rows.length+1) + ")" ), 0);
-		else
-			for(var j=0; j<1;j++){
-				addSourceSignal(new SourceSignal("New Col (" + (model.cols.length+1) + ")" ), 0);
-		}
-}
-</script>
+  
+  </script>
 </head>
-
-
-<body onload="init()">
-<div style="margin: 0 auto;">
-	<button onclick="toggleConnection()">Toggle</button>&nbsp;&nbsp;&nbsp;
-	<button onclick="tempBtnHandler('row')">Add 5 Rows at 0</button>
-	<!-- <INPUT TYPE="text" NAME="inputbox" id="inputbox" VALUE="0" maxlength="3"> -->
-	<button onclick="tempBtnHandler('col')">Add 5 Col at 0</button><br /><br />
-</div> 
-
-
-	<div id="view" style="margin-top: 20px;">
-</div>
-
-<p id="out"></p>
-
-
-
-
-
-
-
-
+<body>
+ 
+<p>
+  <label for="amount">Target sales goal (Millions):</label>
+  <input type="text" id="amount" style="border: 0; color: #f6931f; font-weight: bold;" />
+</p>
+ 
+<div id="vZoomSlider" style="height: 250px;"></div>
+ 
+ 
+ <p>
+  <label for="amount2">Price range:</label>
+  <input type="text" id="amount2" style="border: 0; color: #f6931f; font-weight: bold;" />
+</p>
+ 
+<div id="hZoomSlider"></div>
+ 
 </body>
 </html>
