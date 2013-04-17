@@ -33,6 +33,10 @@ function LibMapperMatrixView(container, model)
 	this.vboxY = 0;
 	
 	this.zoomIncrement = 50;
+	this.vboxMaxW = 3000;
+	this.vboxMinW = 250;
+	
+	
 	
 	this.cellWidth = 32;
 	this.cellHeight = 32;
@@ -122,7 +126,7 @@ LibMapperMatrixView.prototype = {
 		
 		// a wrapper div to hold vscroll, grid + row labels
 		var wrapper1 = document.createElement("div");
-		wrapper1.setAttribute("style", "margin-top: 5px");
+		wrapper1.setAttribute("style", "margin-top: 5px; clear: both;");
 		
 		// v scrollbar
 		div = document.createElement("div");
@@ -138,7 +142,7 @@ LibMapperMatrixView.prototype = {
 		this.svg.setAttribute("height", this.svgHeight);
 		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxX, this.vboxY, this.vboxW, this.vboxH));
 		this.svg.setAttribute("preserveAspectRatio", "none");
-		this.svg.setAttribute("style", "float:left;margin-left: 5px");
+		this.svg.setAttribute("style", "float:left;margin-left: 5px; margin-bottom: 5px");
 		wrapper1.appendChild(this.svg);	
 		
 		// svg row labels
@@ -155,9 +159,9 @@ LibMapperMatrixView.prototype = {
 		container.appendChild(wrapper1);
 		
 		// h zooming scroll bar
-		div = document.createElement("div");
+		var div = document.createElement("div");
 		div.setAttribute("id", "hZoomSlider");
-		div.setAttribute("style", "500px");
+		div.setAttribute("style", "position: relative; margin-top: 10px; clear:both;");
 		container.appendChild(div);
 		
 		// svg column labels
@@ -174,6 +178,16 @@ LibMapperMatrixView.prototype = {
 		
 	},
 
+	sizeZoomBars : function ()
+	{
+		
+		//$("#hZoomSlider").slider("option", "min", 0);
+		//$("#hZoomSlider").slider("option", "max", this.contentW);
+		//$("#hZoomSlider").slider( "option", "values", [ this.vboxX/this.contentW, (this.vboxX + this.vboxW)/this.contentW] );
+		var offset = (this.vboxX/this.contentW)*100;
+		$("#hZoomSlider").slider( "option", "values", [ offset, ((this.vboxW/this.contentW)*100)+offset]);
+		
+	},
 
 	initHorizontalZoomSlider : function ()
 	{
@@ -183,12 +197,15 @@ LibMapperMatrixView.prototype = {
 		 $( "#hZoomSlider" ).slider({
 		      range: true,
 		      min: 0,
-		      max: this.contentW,
-		      values: [ 75, 300 ],
-		      slide: function( event, ui ) {
-		        $( "#amount2" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
-		      }
-		    });
+		      max: 100,
+		      values: [ 25, 75 ],
+		      slide: function( event, ui ) 
+		      {
+			 	if(ui.values[ 0 ] < 20)
+			 		return false;
+			     //ui.values[ 1 ]
+			 }
+		  });
 		    //$( "#amount2" ).val( "$" + $( "#hZoomSlider" ).slider( "values", 0 ) +
 		     // " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
 	},
@@ -215,9 +232,9 @@ LibMapperMatrixView.prototype = {
 				if(difference<=0)
 					return;
 				_self.vboxX =  (ui.value) / 100 * ( _self.contentW-_self.vboxW);		// 0 >= ui.value <= 100
-				_self.svg.setAttribute("viewBox", toViewBoxString(_self.vboxX, _self.vboxY, _self.vboxW, _self.vboxH));
-				_self.svgColLabels.setAttribute("viewBox", toViewBoxString(_self.vboxX, 0, _self.vboxW, _self.colLabelsH));
-				$('ui-slider-range').width(ui.value+'%');//set the height of the range element
+				_self.resetViewBoxes();
+				_self.sizeZoomBars();
+				//$('ui-slider-range').width(ui.value+'%');//set the height of the range element
 			},
 			change: function(event, ui) {
 				//var topValue = -((ui.value)*($scrollpane.find('.scroll-content').height()-$scrollpane.height())/100);//recalculate the difference on change
@@ -294,9 +311,9 @@ LibMapperMatrixView.prototype = {
 				if(difference<=0)
 					return;
 				_self.vboxY =  (100-ui.value) / 100 * ( _self.contentH-_self.vboxH);		// 0 >= ui.value <= 100
-				_self.svg.setAttribute("viewBox", toViewBoxString(_self.vboxX, _self.vboxY, _self.vboxW, _self.vboxH));
-				_self.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, _self.vboxY, _self.rowLabelsW, _self.vboxH));
-				$('ui-slider-range').height(ui.value+'%');//set the height of the range element
+				_self.resetViewBoxes();
+				_self.sizeZoomBars();
+				//$('ui-slider-range').height(ui.value+'%');//set the height of the range element
 			},
 			change: function(event, ui) {
 				//var topValue = -((100-ui.value)*($scrollpane.find('.scroll-content').height()-$scrollpane.height())/100);//recalculate the difference on change
@@ -422,6 +439,9 @@ LibMapperMatrixView.prototype = {
 		this.nCols++;
 		this.contentW = this.nCols*(this.cellWidth+this.cellMargin);
 		this.sizeHScrollbar();
+		
+		this.sizeZoomBars();
+		
 	},
 	
 	
@@ -647,14 +667,11 @@ LibMapperMatrixView.prototype = {
 	
 	toggleConnection : function()
 	{
-		// do nothing if there is no cell selected
-		
 		if(this.selectedCell == null)	
 			return;
 
 		var selectedSrc = this.selectedCell.getAttribute("data-src");
 		var selectedDst = this.selectedCell.getAttribute("data-dst");
-		
 		
 		// toggle the connection
 		
@@ -687,41 +704,44 @@ LibMapperMatrixView.prototype = {
 			else	// style when no cell is moused over 
 				this.selectedCell.setAttribute("class", "cell_up cell_selected");
 		}
-		
-	
 	},
 	
 	
-	zoomIn : function(){
-		if(this.vboxW > 250){
+	zoomIn : function()
+	{
+		if(this.vboxW > this.vboxMinW)
+		{
 			this.vboxW -= this.zoomIncrement;
 			this.vboxH -= this.zoomIncrement/this.aspect;
 			this.resetViewBoxes();
 			this.sizeHScrollbar();
 			this.sizeVScrollbar();
+			this.sizeZoomBars();
 		}
 	},
 	
-	zoomOut : function(){
-		if(this.vboxW <= this.contentW-this.zoomIncrement){
+	zoomOut : function()
+	{
+		if(this.vboxW <= this.contentW-this.zoomIncrement && this.vboxW < this.vboxMaxW-this.zoomIncrement){
 			this.vboxW += this.zoomIncrement;
 			this.vboxH += this.zoomIncrement/this.aspect;
 		}
 		else{
-			this.vboxW = this.contentW;
-			this.vboxH = this.contentW/this.aspect;
+			this.vboxW = (this.contentW<this.vboxMaxW)? this.contentW : this.vboxMaxW;
+			this.vboxH = this.vboxW/this.aspect; //this.contentW/this.aspect;
 		}
 		this.resetViewBoxes();
 		this.sizeHScrollbar();
 		this.sizeVScrollbar();
+		this.sizeZoomBars();
 	},
 	
-	resetViewBoxes : function(){
+	resetViewBoxes : function()
+	{
 		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxX, this.vboxY, this.vboxW, this.vboxH));
 		this.svgColLabels.setAttribute("viewBox", toViewBoxString(this.vboxX, 0, this.vboxW, this.colLabelsH));
 		this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxY, this.rowLabelsW, this.vboxH));
 	},
-	
 	
 	keyboardHandler: function (e, _self)
 	{
