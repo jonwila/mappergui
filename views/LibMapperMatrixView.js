@@ -35,8 +35,8 @@ function LibMapperMatrixView(container, model)
 	this.zoomIncrement = 50;
 	this.vboxMaxW = 3000;
 	this.vboxMinW = 250;
-	
-	
+	this.vboxMaxH = 3000;
+	this.vboxMinH = 150;
 	
 	this.cellWidth = 32;
 	this.cellHeight = 32;
@@ -55,6 +55,7 @@ function LibMapperMatrixView(container, model)
 	this.initVerticalScrollbar($("#vScrollbar"));
 	this.initHorizontalScrollBar($("#hScrollbar"));
 	this.initHorizontalZoomSlider($("#hZoomSlider"));
+	this.initVerticalZoomSlider($("#vZoomSlider"));
 
 	this.nCellIds = 0;
 	
@@ -78,8 +79,6 @@ function LibMapperMatrixView(container, model)
 }
 
 LibMapperMatrixView.prototype = {
-
-	
 		
 	init : function (container) 
 	{ 
@@ -145,6 +144,13 @@ LibMapperMatrixView.prototype = {
 		this.svg.setAttribute("style", "float:left;margin-left: 5px; margin-bottom: 5px");
 		wrapper1.appendChild(this.svg);	
 		
+		// hv zooming scroll bar
+		div = document.createElement("div");
+		div.setAttribute("id", "vZoomSlider");
+		div.setAttribute("style", "float:left;margin-left: 5px; margin-bottom: 5px");
+		//div.setAttribute("style", "position: relative; margin-top: 10px; clear:both;");
+		wrapper1.appendChild(div);
+		
 		// svg row labels
 		this.svgRowLabels = document.createElementNS(this.svgNS, "svg");
 		this.svgRowLabels.setAttribute("id", "svgRows");
@@ -159,7 +165,7 @@ LibMapperMatrixView.prototype = {
 		container.appendChild(wrapper1);
 		
 		// h zooming scroll bar
-		var div = document.createElement("div");
+		div = document.createElement("div");
 		div.setAttribute("id", "hZoomSlider");
 		div.setAttribute("style", "position: relative; margin-top: 10px; clear:both;");
 		container.appendChild(div);
@@ -180,30 +186,69 @@ LibMapperMatrixView.prototype = {
 
 	sizeZoomBars : function ()
 	{
-		
-		//$("#hZoomSlider").slider("option", "min", 0);
-		//$("#hZoomSlider").slider("option", "max", this.contentW);
-		//$("#hZoomSlider").slider( "option", "values", [ this.vboxX/this.contentW, (this.vboxX + this.vboxW)/this.contentW] );
-		var offset = (this.vboxX/this.contentW)*100;
-		$("#hZoomSlider").slider( "option", "values", [ offset, ((this.vboxW/this.contentW)*100)+offset]);
-		
+		$("#hZoomSlider").slider("option", "min", 0);
+		$("#hZoomSlider").slider("option", "max", this.contentW);
+		$("#hZoomSlider").slider( "option", "values", [ this.vboxX, this.vboxX+this.vboxW]);
+		$("#vZoomSlider").slider("option", "min", 0);
+		$("#vZoomSlider").slider("option", "max", this.contentH);
+		$("#vZoomSlider").slider( "option", "values", [this.contentH-(this.vboxY+this.vboxH), this.contentH-this.vboxY]);
 	},
-
+	
 	initHorizontalZoomSlider : function ()
 	{
 		var _self = this;
 		$("#hZoomSlider").width(this.svgWidth);
 		
-		 $( "#hZoomSlider" ).slider({
+		$( "#hZoomSlider" ).slider({
+			range: true,
+			min: 0,
+			max: 100,
+			values: [ 25, 75 ],
+			slide: function( event, ui ) 
+			{
+				var w = ui.values[1]-ui.values[0];
+				if(w < _self.vboxMinW || w > _self.vboxMaxW || w > _self.contentW)
+					return false;
+				else{
+					_self.vboxW = w;
+					_self.vboxH = w/_self.aspect;
+					_self.vboxX = ui.values[0];
+					_self.resetViewBoxes();
+					_self.sizeHScrollbar();
+					_self.sizeVScrollbar();
+					_self.sizeZoomBars();
+				}
+			}
+		});
+		//$( "#amount2" ).val( "$" + $( "#hZoomSlider" ).slider( "values", 0 ) +
+		// " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
+	},
+	
+	initVerticalZoomSlider : function ()
+	{
+		var _self = this;
+		$("#vZoomSlider").height(this.svgHeight);
+		
+		 $("#vZoomSlider").slider({
 		      range: true,
+		      orientation: "vertical",
 		      min: 0,
 		      max: 100,
 		      values: [ 25, 75 ],
 		      slide: function( event, ui ) 
 		      {
-			 	if(ui.values[ 0 ] < 20)
+			 	var h = ui.values[1]-ui.values[0];
+			 	if(h < _self.vboxMinH || h > _self.vboxMaxH || h > _self.contentH)
 			 		return false;
-			     //ui.values[ 1 ]
+			 	else{
+				 	_self.vboxH = h;
+				 	_self.vboxW = h*_self.aspect;
+				 	_self.vboxY = _self.contentH-ui.values[1];
+				 	_self.resetViewBoxes();
+				 	_self.sizeHScrollbar();
+				 	_self.sizeVScrollbar();
+				 	_self.sizeZoomBars();
+			 	}
 			 }
 		  });
 		    //$( "#amount2" ).val( "$" + $( "#hZoomSlider" ).slider( "values", 0 ) +
@@ -234,7 +279,7 @@ LibMapperMatrixView.prototype = {
 				_self.vboxX =  (ui.value) / 100 * ( _self.contentW-_self.vboxW);		// 0 >= ui.value <= 100
 				_self.resetViewBoxes();
 				_self.sizeZoomBars();
-				//$('ui-slider-range').width(ui.value+'%');//set the height of the range element
+				$('ui-slider-range').width(ui.value+'%');//set the height of the range element	//???
 			},
 			change: function(event, ui) {
 				//var topValue = -((ui.value)*($scrollpane.find('.scroll-content').height()-$scrollpane.height())/100);//recalculate the difference on change
@@ -439,7 +484,6 @@ LibMapperMatrixView.prototype = {
 		this.nCols++;
 		this.contentW = this.nCols*(this.cellWidth+this.cellMargin);
 		this.sizeHScrollbar();
-		
 		this.sizeZoomBars();
 		
 	},
@@ -517,6 +561,8 @@ LibMapperMatrixView.prototype = {
 		this.nRows++;
 		this.contentH = this.nRows*(this.cellHeight+this.cellMargin);
 		this.sizeVScrollbar();
+		this.sizeZoomBars();
+
 	}, 
 	
 	createCell : function (row, col, src, dst)

@@ -28,7 +28,7 @@ function init(){
 	view  = new  LibMapperMatrixView(document.getElementById("view"), model);
 	
 	// init with fake data for now
-	var nColsInit = 80, nRowsInit = 20;
+	var nColsInit = 64, nRowsInit = 48;
 	for(var i=nColsInit; i>0;i--)
 		addSourceSignal(new SourceSignal("Source " + i), 0);
 	for(var j=nRowsInit; j>0;j--){

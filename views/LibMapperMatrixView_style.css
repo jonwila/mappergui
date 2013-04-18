@@ -23,8 +23,13 @@ svg{background: none;}
 #hScrollbar .ui-widget-header{background: none;}
 
 #hZoomSlider {margin-left: 20px;}
-#hZoomSlider .ui-slider-handle {height:13px; top: 0;}
+#hZoomSlider .ui-slider-handle {height:12px; top: 0;}
 #hZoomSlider .ui-widget-header  {background: darkgray;}
+
+#vZoomSlider {width: 12px;}
+#vZoomSlider .ui-slider-handle {width:10px; left: 0}
+#vZoomSlider .ui-widget-header  {background: darkgray;}
+
 
 a, a:active, a:visited { color: #607890; text-decoration: none; outline-color: -moz-use-text-color; outline-style: none; outline-width: medium; }
 a:hover { color: #036; }
