@@ -814,26 +814,26 @@ LibMapperMatrixView.prototype = {
 					case 37:	// left
 						if(currentPos[1] > 0)
 							_self.selectedCell = _self.getCellByPos(currentPos[0], currentPos[1]-1);
-						else
-							_self.selectedCell = _self.getCellByPos(currentPos[0], _self.nCols-1);
+//						else
+//							_self.selectedCell = _self.getCellByPos(currentPos[0], _self.nCols-1);
 					  break;
 					case 38:	// up
 						if(currentPos[0] > 0)
 							_self.selectedCell = _self.getCellByPos(currentPos[0]-1, currentPos[1]);
-						else
-							_self.selectedCell = _self.getCellByPos(_self.nRows-1, currentPos[1]);
+//						else
+//							_self.selectedCell = _self.getCellByPos(_self.nRows-1, currentPos[1]);
 					  break;
 					case 39:	// right
 						if(currentPos[1] < _self.nCols-1)
 							_self.selectedCell = _self.getCellByPos(currentPos[0], currentPos[1]+1);
-						else
-							_self.selectedCell = _self.getCellByPos(currentPos[0], 0);
+//						else
+//							_self.selectedCell = _self.getCellByPos(currentPos[0], 0);
 					  break;
 					case 40:	// down
 						if(currentPos[0] < _self.nRows-1)
 							_self.selectedCell = _self.getCellByPos(currentPos[0]+1, currentPos[1]);
-						else
-							_self.selectedCell = _self.getCellByPos(0, currentPos[1]);
+//						else
+//							_self.selectedCell = _self.getCellByPos(0, currentPos[1]);
 					  break;
 				}
 				
@@ -857,9 +857,52 @@ LibMapperMatrixView.prototype = {
 				}
 			}
 			
+			// style the cell as selected
 			addCellClass("cell_selected", _self.selectedCell);
 			
+			// calculate if cell is visible and move viewbox to follow the moving cell
+			var row = _self.selectedCell.getAttribute("data-row");
+			var col = _self.selectedCell.getAttribute("data-col");
+			var cellW = _self.cellWidth+_self.cellMargin;
+			var cellH = _self.cellHeight+_self.cellMargin;
+			var pos = [cellW*col, cellH*row];
+			
+			// off screen on left
+			if(pos[0] < _self.vboxX)
+			{
+				if(_self.vboxX-cellW <0)
+					_self.vboxX = 0;
+				else
+					_self.vboxX -= cellW;
+			}
+			// off screen on right
+			else if(pos[0] > _self.vboxX+_self.vboxW-cellW)
+			{
+				_self.vboxX += 2*cellW;
+			}
+			// off screen above
+			if(pos[1] < _self.vboxY)
+			{
+				if(_self.vboxY-(2*cellH) < 0)
+					_self.vboxY = 0;
+				else
+					_self.vboxY -= (2*cellH);
+			}
+			// off screen below
+			else if(pos[1] > _self.vboxY+_self.vboxH-cellH)
+			{
+				_self.vboxY += 2*(cellH);
+			}
+			
+			_self.resetViewBoxes();
+			_self.sizeZoomBars();
+			_self.updateScrollBars();
 		}
+	},
+	
+	updateScrollBars : function() {
+		$("#hScrollbar").find('.slider-horizontal').slider( "option", "value", (this.vboxX * 100) / (this.contentW-this.vboxW) );
+		$("#vScrollbar").find('.slider-vertical').slider( "option", "value", -((this.vboxY*100/(this.contentH-this.vboxY))-100)  );
 	},
 	
 	
