@@ -7,7 +7,6 @@
 function LibMapperMatrixView(container, model)
 {
 	var _self = this;
-
 	this._container = $(container);
 	this.model = model;
 
@@ -21,46 +20,37 @@ function LibMapperMatrixView(container, model)
 	this.svgNS = "http://www.w3.org/2000/svg";
 	this.svgNSxlink = "http://www.w3.org/1999/xlink";
 
-	this.svgWidth = 600;
-	this.svgHeight = 400;
-	this.aspect = this.svgWidth/this.svgHeight;
+	this.svgDim = [600, 400];								// x-y dimensions of the svg canvas
 	this.colLabelsH = 100;
 	this.rowLabelsW = 200;
 	
-	this.vboxW = this.svgWidth;
-	this.vboxH = this.svgHeight;
-	this.vboxX = 0;
-	this.vboxY = 0;
+	this.zoomIncrement = 50;							
+	this.aspect = this.svgDim[0]/this.svgDim[1];			// aspect ratio of view box (for zooming)
+	this.vboxDim = [ this.svgDim[0], this.svgDim[1] ];		// vbox width-height dimensions
+	this.vboxPos = [0, 0];									// vbox x-y position
+	this.vboxMinDim = [250, 150];							// vbox minimum width-height dimensions
+	this.vboxMaxDim = [3000, 3000];		// *not used in zoom scroll bars
 	
-	this.zoomIncrement = 50;
-	this.vboxMinW = 250;
-	this.vboxMinH = 150;
-	this.vboxMaxW = 3000;	//stopped using
-	this.vboxMaxH = 3000;	//stopped using
+	this.cellDim = [32, 32];								// cell width-height dimensions
+	this.cellRoundedCorner = 0;								// cell rounded corners radius
+	this.cellMargin = 1;									// margin between cells
+	this.labelMargin = 5;									// offset for source signal labels
 	
-	this.cellWidth = 32;
-	this.cellHeight = 32;
-	this.cellRoundedCorner = 0;
-	this.cellMargin = 1;
-	this.labelMargin = 5;
-	
-	var selectedCell = null; 	// hold a reference to the selected cell
-	var mousedOverCell = null;	// hold a reference to the cell that's moused over
-	this.nRows = 0;
-	this.nCols = 0;
-	this.contentW;
-	this.contentH;
+	var selectedCell = null; 					// hold a reference to the selected cell
+	var mousedOverCell = null;					// hold a reference to the cell that's moused over
+
+	this.nRows = 0;											// number of rows in grid (destination signals)
+	this.nCols = 0;											// number of columns in grid (source signals)
+	this.contentDim = [0, 0];								// width-height dimension of full content
 	
 	this.init(container);
 	this.initHorizontalZoomSlider($("#hZoomSlider"));
 	this.initVerticalZoomSlider($("#vZoomSlider"));
 
-	this.nCellIds = 0;
 	
-	//helper for scroll zoom bars
-	this.handleClicked;
-	this.handleClick;
-	this.handleValues;
+	
+	this.handleClicked; this.handleClick; this.handleValues;	//helpers for zooming scroll bars
+	this.nCellIds = 0;											// helper for generating cell IDs
 	
 	//Keyboard handlers
 	document.onkeyup = function(e){
@@ -141,9 +131,9 @@ LibMapperMatrixView.prototype = {
 		this.svg.setAttribute("id", "svgGrid");
 		this.svg.setAttribute("xmlns", this.svgNS);
 		this.svg.setAttribute("xmlns:xlink", this.svgNSxlink);
-		this.svg.setAttribute("width", this.svgWidth);
-		this.svg.setAttribute("height", this.svgHeight);
-		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxX, this.vboxY, this.vboxW, this.vboxH));
+		this.svg.setAttribute("width", this.svgDim[0]);
+		this.svg.setAttribute("height", this.svgDim[1]);
+		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], this.vboxPos[1], this.vboxDim[0], this.vboxDim[1]));
 		this.svg.setAttribute("preserveAspectRatio", "none");
 		this.svg.setAttribute("style", "float:left;margin-left: 5px; margin-bottom: 5px");
 		wrapper1.appendChild(this.svg);	
@@ -154,7 +144,7 @@ LibMapperMatrixView.prototype = {
 		this.svgRowLabels.setAttribute("xmlns", this.svgNS);
 		this.svgRowLabels.setAttribute("xmlns:xlink", this.svgNSxlink);
 		this.svgRowLabels.setAttribute("width", this.rowLabelsW);
-		this.svgRowLabels.setAttribute("height", this.svgHeight);
+		this.svgRowLabels.setAttribute("height", this.svgDim[1]);
 		this.svgRowLabels.setAttribute("style", "float:left;");
 		this.svgRowLabels.setAttribute("preserveAspectRatio", "none");
 		wrapper1.appendChild(this.svgRowLabels);
@@ -166,7 +156,7 @@ LibMapperMatrixView.prototype = {
 		this.svgColLabels.setAttribute("id", "svgCols");
 		this.svgColLabels.setAttribute("xmlns", this.svgNS);
 		this.svgColLabels.setAttribute("xmlns:xlink", this.svgNSxlink);
-		this.svgColLabels.setAttribute("width", this.svgWidth);
+		this.svgColLabels.setAttribute("width", this.svgDim[0]);
 		this.svgColLabels.setAttribute("height", this.colLabelsH);
 		this.svgColLabels.setAttribute("style", "clear:both; margin-left:20px;");
 		this.svgColLabels.setAttribute("preserveAspectRatio", "none");
@@ -178,17 +168,17 @@ LibMapperMatrixView.prototype = {
 	sizeZoomBars : function ()
 	{
 		$("#hZoomSlider").slider("option", "min", 0);
-		$("#hZoomSlider").slider("option", "max", this.contentW);
-		$("#hZoomSlider").slider( "option", "values", [ this.vboxX, this.vboxX+this.vboxW]);
+		$("#hZoomSlider").slider("option", "max", this.contentDim[0]);
+		$("#hZoomSlider").slider( "option", "values", [ this.vboxPos[0], this.vboxPos[0]+this.vboxDim[0]]);
 		$("#vZoomSlider").slider("option", "min", 0);
-		$("#vZoomSlider").slider("option", "max", this.contentH);
-		$("#vZoomSlider").slider( "option", "values", [this.contentH-(this.vboxY+this.vboxH), this.contentH-this.vboxY]);
+		$("#vZoomSlider").slider("option", "max", this.contentDim[1]);
+		$("#vZoomSlider").slider( "option", "values", [this.contentDim[1]-(this.vboxPos[1]+this.vboxDim[1]), this.contentDim[1]-this.vboxPos[1]]);
 	},
 	
 	initHorizontalZoomSlider : function ()
 	{
 		var _self = this;
-		$("#hZoomSlider").width(this.svgWidth);
+		$("#hZoomSlider").width(this.svgDim[0]);
 		
 		$( "#hZoomSlider" ).slider({
 			range: true,
@@ -203,13 +193,13 @@ LibMapperMatrixView.prototype = {
 				if(_self.handleClicked)	//for when a handle is clicked (change range and zoom)
 				{
 					var w = ui.values[1]-ui.values[0];
-					//if(w < _self.vboxMinW || w > _self.vboxMaxW || w > _self.contentW)
-					if(w < _self.vboxMinW || w > _self.contentW)
+					//if(w < _self.vboxMinDim[0] || w > _self.vboxMaxDim[0] || w > _self.contentDim[0])
+					if(w < _self.vboxMinDim[0] || w > _self.contentDim[0])
 						return false;
 					else{
-						_self.vboxW = w;
-						_self.vboxH = w/_self.aspect;
-						_self.vboxX = ui.values[0];
+						_self.vboxDim[0] = w;
+						_self.vboxDim[1] = w/_self.aspect;
+						_self.vboxPos[0] = ui.values[0];
 						_self.resetViewBoxes();
 						_self.sizeZoomBars();
 					}
@@ -218,7 +208,7 @@ LibMapperMatrixView.prototype = {
 				{
 					// calculated the drag size of mouse relative to size of the scroll bar
 					// multiplied by the range to scrollable range
-					var dx = ((event.pageX-_self.handleClick[0]) / _self.svgWidth) * ( _self.contentW-_self.vboxW);
+					var dx = ((event.pageX-_self.handleClick[0]) / _self.svgDim[0]) * ( _self.contentDim[0]-_self.vboxDim[0]);
 			        var v1 = _self.handleValues[0]+dx;
 			        var v2 = _self.handleValues[1]+dx;
 			        
@@ -229,16 +219,16 @@ LibMapperMatrixView.prototype = {
 			        	v1 += overflow;
 			        	v2 += overflow;
 			        }
-			        else if(v2 > _self.contentW)
+			        else if(v2 > _self.contentDim[0])
 		        	{
-			        	var overflow = _self.contentW - v2;
+			        	var overflow = _self.contentDim[0] - v2;
 			        	v1 += overflow;
 			        	v2 += overflow;
 			        }
 			        		
 			        // update the slider's values and the vBox's position
 		        	$("#" + this.id).slider("option", "values", [v1,v2]);
-		        	_self.vboxX =  v1;
+		        	_self.vboxPos[0] =  v1;
 		        	_self.resetViewBoxes();
 			        
 		        	//disables default functionality slider
@@ -267,7 +257,7 @@ LibMapperMatrixView.prototype = {
 	initVerticalZoomSlider : function ()
 	{
 		var _self = this;
-		$("#vZoomSlider").height(this.svgHeight);
+		$("#vZoomSlider").height(this.svgDim[1]);
 		
 		 $("#vZoomSlider").slider({
 		      range: true,
@@ -284,12 +274,12 @@ LibMapperMatrixView.prototype = {
 				if(_self.handleClicked)	//for when a handle is clicked (change range and zoom)
 				{
 					var h = ui.values[1]-ui.values[0];
-				 	if(h < _self.vboxMinH || h > _self.contentH)
+				 	if(h < _self.vboxMinDim[1] || h > _self.contentDim[1])
 				 		return false;
 				 	else{
-					 	_self.vboxH = h;
-					 	_self.vboxW = h*_self.aspect;
-					 	_self.vboxY = _self.contentH-ui.values[1];
+					 	_self.vboxDim[1] = h;
+					 	_self.vboxDim[0] = h*_self.aspect;
+					 	_self.vboxPos[1] = _self.contentDim[1]-ui.values[1];
 					 	_self.resetViewBoxes();
 					 	_self.sizeZoomBars();
 				 	}
@@ -298,7 +288,7 @@ LibMapperMatrixView.prototype = {
 				{
 					// calculated the drag size of mouse relative to size of the scroll bar
 					// multiplied by the range to scrollable range
-					var dy = ((_self.handleClick[1]-event.pageY) / _self.svgHeight) * ( _self.contentH-_self.vboxH);
+					var dy = ((_self.handleClick[1]-event.pageY) / _self.svgDim[1]) * ( _self.contentDim[1]-_self.vboxDim[1]);
 			        var v1 = _self.handleValues[0]+dy;
 			        var v2 = _self.handleValues[1]+dy;
 			        
@@ -309,16 +299,16 @@ LibMapperMatrixView.prototype = {
 			        	v1 += overflow;
 			        	v2 += overflow;
 			        }
-			        else if(v2 > _self.contentH)
+			        else if(v2 > _self.contentDim[1])
 		        	{
-			        	var overflow = _self.contentH - v2;
+			        	var overflow = _self.contentDim[1] - v2;
 			        	v1 += overflow;
 			        	v2 += overflow;
 			        }
 			        		
 			        // update the slider's values and the vBox's position
 		        	$("#" + this.id).slider("option", "values", [v1,v2]);
-		        	_self.vboxY =  (_self.contentH-_self.vboxH) - v1;
+		        	_self.vboxPos[1] =  (_self.contentDim[1]-_self.vboxDim[1]) - v1;
 		        	_self.resetViewBoxes();
 			        
 		        	//disables default functionality slider
@@ -361,7 +351,7 @@ LibMapperMatrixView.prototype = {
 			var colLabel = this.svgColLabels.getElementById("colLabel" + j);
 			if(colLabel != null)
 			{
-				colLabel.setAttribute("transform","translate(" + ((j+1)*(this.cellWidth+this.cellMargin)+11).toString() + "," + this.labelMargin + ")rotate(90)");
+				colLabel.setAttribute("transform","translate(" + ((j+1)*(this.cellDim[0]+this.cellMargin)+11).toString() + "," + this.labelMargin + ")rotate(90)");
 				colLabel.setAttribute("id", "colLabel"+(j+1));
 				colLabel.setAttribute("data-col", j+1);
 			}
@@ -374,7 +364,7 @@ LibMapperMatrixView.prototype = {
 			column =  parseInt(cell.getAttribute("data-col"));
 			if(column >= index){
 				cell.setAttribute("data-col", column+1);
-				cell.setAttribute("x",(column+1)*(this.cellWidth+this.cellMargin));	// reposition the cell
+				cell.setAttribute("x",(column+1)*(this.cellDim[0]+this.cellMargin));	// reposition the cell
 			}
 		}
 	
@@ -391,7 +381,7 @@ LibMapperMatrixView.prototype = {
 		//create new COL Label
 		newLabel = document.createElementNS(this.svgNS,"text");
 		newLabel.setAttribute("id", "colLabel" + index.toString()  );
-		var xPos = index*(this.cellWidth+this.cellMargin)+11;			// pluss 11 MAKE DYNAMIC!
+		var xPos = index*(this.cellDim[0]+this.cellMargin)+11;			// pluss 11 MAKE DYNAMIC!
 		var yPos = this.labelMargin;
 		newLabel.setAttribute("class", "label");
 		newLabel.setAttribute("data-src", signal.id);
@@ -402,7 +392,7 @@ LibMapperMatrixView.prototype = {
 		
 		// update GUI data
 		this.nCols++;
-		this.contentW = this.nCols*(this.cellWidth+this.cellMargin);
+		this.contentDim[0] = this.nCols*(this.cellDim[0]+this.cellMargin);
 		this.sizeZoomBars();
 		
 	},
@@ -436,11 +426,11 @@ LibMapperMatrixView.prototype = {
 		for(i=this.nRows-1; i>=index; i--)											// for each row after index
 		{
 			var rowLabel = this.svgRowLabels.getElementById("rowLabel" + i);		// get the element with the row label
-			var y = (i+1)*(this.cellHeight+this.cellMargin);						// calculate the new y coordinate
+			var y = (i+1)*(this.cellDim[1]+this.cellMargin);						// calculate the new y coordinate
 			if(rowLabel != null){
 				rowLabel.setAttribute("id", "rowLabel" + (i+1));					// update the element's ID
 				rowLabel.setAttribute("data-row", i+1);								
-				rowLabel.setAttribute("y", y+(this.cellHeight/2)+4);				// set the new y coordinate + offset to center vertically
+				rowLabel.setAttribute("y", y+(this.cellDim[1]/2)+4);				// set the new y coordinate + offset to center vertically
 			}
 		}
 		
@@ -451,7 +441,7 @@ LibMapperMatrixView.prototype = {
 			var row = parseInt(cell.getAttribute("data-row"));						// get the cell's row
 			if(row >= index){
 				cell.setAttribute("data-row", row+1);								// store new row number
-				cell.setAttribute("y",(row+1)*(this.cellHeight+this.cellMargin));	// reposition y coordinate
+				cell.setAttribute("y",(row+1)*(this.cellDim[1]+this.cellMargin));	// reposition y coordinate
 			}
 		}
 		
@@ -469,7 +459,7 @@ LibMapperMatrixView.prototype = {
 		var newRowLabel = document.createElementNS(this.svgNS,"text");
 		newRowLabel.setAttribute("id", "rowLabel" + index.toString()  );
 		newRowLabel.setAttribute("x", this.labelMargin);
-		newRowLabel.setAttribute("y", (index)*(this.cellHeight+this.cellMargin)+(this.cellHeight/2)+4);		// plus 4 to center vertically MAKE DYNAMIC!
+		newRowLabel.setAttribute("y", (index)*(this.cellDim[1]+this.cellMargin)+(this.cellDim[1]/2)+4);		// plus 4 to center vertically MAKE DYNAMIC!
 		newRowLabel.setAttribute("data-dst", signal.id);
 		newRowLabel.setAttribute("data-row", index);
 		newRowLabel.setAttribute("class","label");
@@ -478,7 +468,7 @@ LibMapperMatrixView.prototype = {
 		
 		// update GUI data		
 		this.nRows++;
-		this.contentH = this.nRows*(this.cellHeight+this.cellMargin);
+		this.contentDim[1] = this.nRows*(this.cellDim[1]+this.cellMargin);
 		this.sizeZoomBars();
 
 	}, 
@@ -492,12 +482,12 @@ LibMapperMatrixView.prototype = {
 		cell.setAttribute("data-src", src);
 		cell.setAttribute("data-dst", dst);
 		
-		cell.setAttribute("x",col*(this.cellWidth+this.cellMargin));
-		cell.setAttribute("y",row*(this.cellHeight+this.cellMargin));
+		cell.setAttribute("x",col*(this.cellDim[0]+this.cellMargin));
+		cell.setAttribute("y",row*(this.cellDim[1]+this.cellMargin));
 		cell.setAttribute("rx", this.cellRoundedCorner);
 		cell.setAttribute("ry", this.cellRoundedCorner);
-		cell.setAttribute("width",this.cellWidth);
-		cell.setAttribute("height",this.cellHeight);
+		cell.setAttribute("width",this.cellDim[0]);
+		cell.setAttribute("height",this.cellDim[1]);
 		cell.setAttribute("class","cell_up");
 		
 
@@ -673,10 +663,10 @@ LibMapperMatrixView.prototype = {
 	
 	zoomIn : function()
 	{
-		if(this.vboxW > this.vboxMinW)
+		if(this.vboxDim[0] > this.vboxMinDim[0])
 		{
-			this.vboxW -= this.zoomIncrement;
-			this.vboxH -= this.zoomIncrement/this.aspect;
+			this.vboxDim[0] -= this.zoomIncrement;
+			this.vboxDim[1] -= this.zoomIncrement/this.aspect;
 			this.resetViewBoxes();
 			this.sizeZoomBars();
 		}
@@ -684,13 +674,13 @@ LibMapperMatrixView.prototype = {
 	
 	zoomOut : function()
 	{
-		if(this.vboxW <= this.contentW-this.zoomIncrement && this.vboxW < this.vboxMaxW-this.zoomIncrement){
-			this.vboxW += this.zoomIncrement;
-			this.vboxH += this.zoomIncrement/this.aspect;
+		if(this.vboxDim[0] <= this.contentDim[0]-this.zoomIncrement && this.vboxDim[0] < this.vboxMaxDim[0]-this.zoomIncrement){
+			this.vboxDim[0] += this.zoomIncrement;
+			this.vboxDim[1] += this.zoomIncrement/this.aspect;
 		}
 		else{
-			this.vboxW = (this.contentW<this.vboxMaxW)? this.contentW : this.vboxMaxW;
-			this.vboxH = this.vboxW/this.aspect; //this.contentW/this.aspect;
+			this.vboxDim[0] = (this.contentDim[0]<this.vboxMaxDim[0])? this.contentDim[0] : this.vboxMaxDim[0];
+			this.vboxDim[1] = this.vboxDim[0]/this.aspect; //this.contentDim[0]/this.aspect;
 		}
 		this.resetViewBoxes();
 		this.sizeZoomBars();
@@ -698,9 +688,9 @@ LibMapperMatrixView.prototype = {
 	
 	resetViewBoxes : function()
 	{
-		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxX, this.vboxY, this.vboxW, this.vboxH));
-		this.svgColLabels.setAttribute("viewBox", toViewBoxString(this.vboxX, 0, this.vboxW, this.colLabelsH));
-		this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxY, this.rowLabelsW, this.vboxH));
+		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], this.vboxPos[1], this.vboxDim[0], this.vboxDim[1]));
+		this.svgColLabels.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], 0, this.vboxDim[0], this.colLabelsH));
+		this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxPos[1], this.rowLabelsW, this.vboxDim[1]));
 	},
 	
 	keyboardHandler: function (e, _self)
@@ -777,35 +767,35 @@ LibMapperMatrixView.prototype = {
 			// calculate if cell is visible and move viewbox to follow the moving cell
 			var row = _self.selectedCell.getAttribute("data-row");
 			var col = _self.selectedCell.getAttribute("data-col");
-			var cellW = _self.cellWidth+_self.cellMargin;
-			var cellH = _self.cellHeight+_self.cellMargin;
+			var cellW = _self.cellDim[0]+_self.cellMargin;
+			var cellH = _self.cellDim[1]+_self.cellMargin;
 			var pos = [cellW*col, cellH*row];
 			
 			// off screen on left
-			if(pos[0] < _self.vboxX)
+			if(pos[0] < _self.vboxPos[0])
 			{
-				if(_self.vboxX-cellW <0)
-					_self.vboxX = 0;
+				if(_self.vboxPos[0]-cellW <0)
+					_self.vboxPos[0] = 0;
 				else
-					_self.vboxX -= cellW;
+					_self.vboxPos[0] -= cellW;
 			}
 			// off screen on right
-			else if(pos[0] > _self.vboxX+_self.vboxW-cellW)
+			else if(pos[0] > _self.vboxPos[0]+_self.vboxDim[0]-cellW)
 			{
-				_self.vboxX += 2*cellW;
+				_self.vboxPos[0] += 2*cellW;
 			}
 			// off screen above
-			if(pos[1] < _self.vboxY)
+			if(pos[1] < _self.vboxPos[1])
 			{
-				if(_self.vboxY-(2*cellH) < 0)
-					_self.vboxY = 0;
+				if(_self.vboxPos[1]-(2*cellH) < 0)
+					_self.vboxPos[1] = 0;
 				else
-					_self.vboxY -= (2*cellH);
+					_self.vboxPos[1] -= (2*cellH);
 			}
 			// off screen below
-			else if(pos[1] > _self.vboxY+_self.vboxH-cellH)
+			else if(pos[1] > _self.vboxPos[1]+_self.vboxDim[1]-cellH)
 			{
-				_self.vboxY += 2*(cellH);
+				_self.vboxPos[1] += 2*(cellH);
 			}
 			
 			_self.resetViewBoxes();
@@ -815,8 +805,8 @@ LibMapperMatrixView.prototype = {
 	},
 	
 	updateScrollBars : function() {
-		$("#hScrollbar").find('.slider-horizontal').slider( "option", "value", (this.vboxX * 100) / (this.contentW-this.vboxW) );
-		$("#vScrollbar").find('.slider-vertical').slider( "option", "value", -((this.vboxY*100/(this.contentH-this.vboxY))-100)  );
+		$("#hScrollbar").find('.slider-horizontal').slider( "option", "value", (this.vboxPos[0] * 100) / (this.contentDim[0]-this.vboxDim[0]) );
+		$("#vScrollbar").find('.slider-vertical').slider( "option", "value", -((this.vboxPos[1]*100/(this.contentDim[1]-this.vboxPos[1]))-100)  );
 	},
 	
 	
