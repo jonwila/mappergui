@@ -52,8 +52,6 @@ function LibMapperMatrixView(container, model)
 	this.contentH;
 	
 	this.init(container);
-	this.initVerticalScrollbar($("#vScrollbar"));
-	this.initHorizontalScrollBar($("#hScrollbar"));
 	this.initHorizontalZoomSlider($("#hZoomSlider"));
 	this.initVerticalZoomSlider($("#vZoomSlider"));
 
@@ -96,6 +94,22 @@ LibMapperMatrixView.prototype = {
 		
 		var btn;
 		
+		//zoom in button
+		btn = document.createElement("button");
+		btn.innerHTML = "+";
+		btn.addEventListener("click", function(evt){
+			_self.zoomIn();
+		});
+		div.appendChild(btn);
+			
+		//zoom out button
+		btn = document.createElement("button");
+		btn.innerHTML = "-";
+		btn.addEventListener("click", function(evt){
+			_self.zoomOut();
+		});
+		div.appendChild(btn);
+			
 		//toggle connection button
 		btn = document.createElement("button");
 		btn.innerHTML = "Toggle";
@@ -104,36 +118,22 @@ LibMapperMatrixView.prototype = {
 		});
 		div.appendChild(btn);
 		
-		//zoom in button
-		btn = document.createElement("button");
-		btn.innerHTML = "Zoom IN";
-		btn.addEventListener("click", function(evt){
-			_self.zoomIn();
-		});
-		div.appendChild(btn);
-			
-		//zoom out button
-		btn = document.createElement("button");
-		btn.innerHTML = "Zoom OUT";
-		btn.addEventListener("click", function(evt){
-			_self.zoomOut();
-		});
-		div.appendChild(btn);
-			
 		container.appendChild(div);
 		
-		//h scrollbar
+		//horizontal scrollbar 
 		div = document.createElement("div");
-		div.setAttribute("id", "hScrollbar");
+		div.setAttribute("id", "hZoomSlider");
+		div.setAttribute("style", "position: relative; margin-top: 10px; clear:both;");
 		container.appendChild(div);
 		
 		// a wrapper div to hold vscroll, grid + row labels
 		var wrapper1 = document.createElement("div");
 		wrapper1.setAttribute("style", "margin-top: 5px; clear: both;");
 		
-		// v scrollbar
+		// vertical scrollbar
 		div = document.createElement("div");
-		div.setAttribute("id", "vScrollbar");
+		div.setAttribute("id", "vZoomSlider");
+		div.setAttribute("style", "float:left;margin-left: 5px;");
 		wrapper1.appendChild(div);
 		
 		// svg canvas
@@ -148,13 +148,6 @@ LibMapperMatrixView.prototype = {
 		this.svg.setAttribute("style", "float:left;margin-left: 5px; margin-bottom: 5px");
 		wrapper1.appendChild(this.svg);	
 		
-		// hv zooming scroll bar
-		div = document.createElement("div");
-		div.setAttribute("id", "vZoomSlider");
-		div.setAttribute("style", "float:left;margin-left: 5px; margin-bottom: 5px");
-		//div.setAttribute("style", "position: relative; margin-top: 10px; clear:both;");
-		wrapper1.appendChild(div);
-		
 		// svg row labels
 		this.svgRowLabels = document.createElementNS(this.svgNS, "svg");
 		this.svgRowLabels.setAttribute("id", "svgRows");
@@ -167,12 +160,6 @@ LibMapperMatrixView.prototype = {
 		wrapper1.appendChild(this.svgRowLabels);
 		
 		container.appendChild(wrapper1);
-		
-		// h zooming scroll bar
-		div = document.createElement("div");
-		div.setAttribute("id", "hZoomSlider");
-		div.setAttribute("style", "position: relative; margin-top: 10px; clear:both;");
-		container.appendChild(div);
 		
 		// svg column labels
 		this.svgColLabels = document.createElementNS(this.svgNS, "svg");
@@ -224,8 +211,6 @@ LibMapperMatrixView.prototype = {
 						_self.vboxH = w/_self.aspect;
 						_self.vboxX = ui.values[0];
 						_self.resetViewBoxes();
-						_self.sizeHScrollbar();
-						_self.sizeVScrollbar();
 						_self.sizeZoomBars();
 					}
 				}
@@ -265,11 +250,16 @@ LibMapperMatrixView.prototype = {
 		// " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
 	},
 	
-	//helper function that customizes JQUERY UI Range slider to have the scrollbar features
+	/**
+	 * helper function that customizes JQueryUI Range slider to gain scrollbar functionality 
+	 * when slider is clicked, check if clicked one of the handles or the slider
+	 * if slider, store the original values (need them saved otherwise slider's default functionality overrides them)
+	 * and the click position (used to determine how much user has dragged the mouse)
+	 */
 	sliderClicked: function (e, ui, _self)
 	{
-		_self.handleClicked = $(e.originalEvent.target).hasClass("ui-slider-handle");	// true if clicked on a handle
-		_self.handleValues = ui.values;	// store the original values 
+		_self.handleClicked = $(e.originalEvent.target).hasClass("ui-slider-handle");	// true if clicked on handle, false for slider 
+		_self.handleValues = ui.values;			// store the original values 
 		_self.handleClick = [e.pageX, e.pageY];	// store the initial x/y click position
 		
 	},
@@ -328,7 +318,7 @@ LibMapperMatrixView.prototype = {
 			        		
 			        // update the slider's values and the vBox's position
 		        	$("#" + this.id).slider("option", "values", [v1,v2]);
-		        	_self.vboxY =  v1;
+		        	_self.vboxY =  (_self.contentH-_self.vboxH) - v1;
 		        	_self.resetViewBoxes();
 			        
 		        	//disables default functionality slider
@@ -340,161 +330,6 @@ LibMapperMatrixView.prototype = {
 		     // " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
 	},
 	
-	initHorizontalScrollBar : function ($bar)
-	{
-		var _self = this;
-		
-		if($bar.find('.slider-wrap').length==0)//if the slider-wrap doesn't exist, insert it and set the initial value
-			$bar.append('<\div class="slider-wrap"><\div class="slider-horizontal"><\/div><\/div>');//append the necessary divs so they're only there if needed
-		
-		$bar.find('.slider-wrap').width(this.svgWidth);//set the height of the slider bar to that of the svg canvas
-		
-		//initialize the JQueryUI slider
-		$bar.find('.slider-horizontal').slider({
-			orientation: 'horizontal',
-			min: 0,
-			max: 100,
-			range:'min',
-			value: 0,
-			slide: function(event, ui) {
-			
-				var difference = _self.contentW-_self.vboxW;
-				if(difference<=0)
-					return;
-				_self.vboxX =  (ui.value) / 100 * ( _self.contentW-_self.vboxW);		// 0 >= ui.value <= 100
-				_self.resetViewBoxes();
-				_self.sizeZoomBars();
-				$('ui-slider-range').width(ui.value+'%');//set the height of the range element	//???
-			},
-			change: function(event, ui) {
-				//var topValue = -((ui.value)*($scrollpane.find('.scroll-content').height()-$scrollpane.height())/100);//recalculate the difference on change
-				//$('ui-slider-range').width(ui.value+'%');
-		  }	  
-		});
-	
-		//code for clicks on the scrollbar outside the slider
-		
-		$bar.find(".ui-slider").click(function(event){//stop any clicks on the slider propagating through to the code below
-			event.stopPropagation();
-		});
-		   
-		$bar.find(".slider-wrap").click(function(event){//clicks on the wrap outside the slider range
-			var offsetLeft = $(this).offset().left;//read the offset of the scroll pane
-			var clickValue = (event.pageX-offsetLeft)*100/$(this).width();//find the click point, subtract the offset, and calculate percentage of the slider clicked
-			$("#out").text(clickValue);
-			$(this).find(".slider-horizontal").slider("value", clickValue);//set the new value of the slider
-	
-			_self.vboxX =  clickValue / 100 * ( _self.contentW-_self.vboxW);		// 0 >= ui.value <= 100
-			_self.svg.setAttribute("viewBox", toViewBoxString(_self.vboxX, _self.vboxY, _self.vboxW, _self.vboxH));
-			_self.svgColLabels.setAttribute("viewBox", toViewBoxString(_self.vboxX, 0, _self.vboxW, _self.colLabelsH));
-			$('ui-slider-range').width(clickValue+'%');//set the height of the range element
-		}); 
-		
-		this.sizeHScrollbar();
-	},
-	
-	sizeHScrollbar : function () 
-	{
-		var proportion, handleHeight;
-		var difference = this.contentW-this.vboxW;
-		
-		if(difference>0){	// determine the handle's size
-			proportion = difference / this.contentW;
-			handleHeight = Math.round((1-proportion)* this.svgWidth );//set the proportional height - round it to make sure everything adds up correctly later on
-		}
-		else{
-			handleHeight = this.svgWidth;
-		}	
-		handleHeight -= handleHeight%2;		//if odd, subtract 1 to make even. If even subtract nothing
-		
-		$("#hScrollbar").find(".ui-slider-handle").css({width:handleHeight,'margin-left':-0.5*handleHeight});
-		var origSliderHeight = this.svgWidth;//read the original slider height
-		var sliderHeight = origSliderHeight - handleHeight ;//the height through which the handle can move needs to be the original height minus the handle height
-		var sliderMargin =  (origSliderHeight - sliderHeight)*0.5;//so the slider needs to have both top and bottom margins equal to half the difference
-		$("#hScrollbar").find(".ui-slider").css({width:sliderHeight,'margin-left':sliderMargin});//set the slider height and margins
-		$("#hScrollbar").find(".ui-slider-range").css({left:-sliderMargin});//position the slider-range div at the top of the slider container
-		
-	},
-	
-
-	initVerticalScrollbar : function ($bar)	
-	{
-		var _self = this;
-		
-		//$bar is the div to create the scrollbar in
-		
-		if($bar.find('.slider-wrap').length==0)//if the slider-wrap doesn't exist, insert it and set the initial value
-			$bar.append('<\div class="slider-wrap"><\div class="slider-vertical"><\/div><\/div>');//append the necessary divs so they're only there if needed
-		
-		$bar.find('.slider-wrap').height(this.svgHeight);//set the height of the slider bar to that of the svg canvas
-		
-		//initialize the JQueryUI slider
-		$bar.find('.slider-vertical').slider({
-			orientation: 'vertical',
-			min: 0,
-			max: 100,
-			range:'min',
-			value: 100,
-			slide: function(event, ui) {
-			var p = this.parentNode;
-				var difference = _self.contentH-_self.vboxH;
-				if(difference<=0)
-					return;
-				_self.vboxY =  (100-ui.value) / 100 * ( _self.contentH-_self.vboxH);		// 0 >= ui.value <= 100
-				_self.resetViewBoxes();
-				_self.sizeZoomBars();
-				//$('ui-slider-range').height(ui.value+'%');//set the height of the range element
-			},
-			change: function(event, ui) {
-				//var topValue = -((100-ui.value)*($scrollpane.find('.scroll-content').height()-$scrollpane.height())/100);//recalculate the difference on change
-				//$('ui-slider-range').height(ui.value+'%');
-		  }	  
-		});
-
-		//code for clicks on the scrollbar outside the slider
-		$bar.find(".ui-slider").click(function(event){//stop any clicks on the slider propagating through to the code below
-			event.stopPropagation();
-		});
-		   
-		$bar.find(".slider-wrap").click(function(event){//clicks on the wrap outside the slider range
-			var offsetTop = $(this).offset().top;//read the offset of the scroll pane
-			var clickValue = (event.pageY-offsetTop)*100/$(this).height();//find the click point, subtract the offset, and calculate percentage of the slider clicked
-			$(this).find(".slider-vertical").slider("value", 100-clickValue);//set the new value of the slider
-
-			_self.vboxY =  (clickValue) / 100 * ( _self.contentH-_self.vboxH);		// 0 >= ui.value <= 100
-			_self.svg.setAttribute("viewBox", toViewBoxString(_self.vboxX, _self.vboxY, _self.vboxW, _self.vboxH));
-			_self.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, _self.vboxY, _self.rowLabelsW, _self.vboxH));
-		}); 
-
-		this.sizeVScrollbar();
-	},
-	
-	
-	sizeVScrollbar : function()
-	{
-		var proportion, handleHeight;
-		var difference = this.contentH-this.vboxH;
-		
-		if(difference>0) //if the scrollbar is needed, set it up...
-		{
-			proportion = difference / this.contentH;
-			handleHeight = Math.round((1-proportion)* this.svgHeight );//set the proportional height - round it to make sure everything adds up correctly later on
-		}
-		else
-		{
-			handleHeight = this.svgHeight;
-		}	
-		handleHeight -= handleHeight%2;		//if odd, substract 1 to make even. If even substract nothing
-		
-		$("#vScrollbar").find(".ui-slider-handle").css({height:handleHeight,'margin-bottom':-0.5*handleHeight});
-		var origSliderHeight = this.svgHeight;//read the original slider height
-		var sliderHeight = origSliderHeight - handleHeight ;//the height through which the handle can move needs to be the original height minus the handle height
-		var sliderMargin =  (origSliderHeight - sliderHeight)*0.5;//so the slider needs to have both top and bottom margins equal to half the difference
-		$("#vScrollbar").find(".ui-slider").css({height:sliderHeight,'margin-top':sliderMargin});//set the slider height and margins
-		$("#vScrollbar").find(".ui-slider-range").css({bottom:-sliderMargin});//position the slider-range div at the top of the slider container
-		
-	},
-
 	/**
 	 * insert a column at the specified index
 	 * reposition the columns cell and label with index greater than the specified index
@@ -568,7 +403,6 @@ LibMapperMatrixView.prototype = {
 		// update GUI data
 		this.nCols++;
 		this.contentW = this.nCols*(this.cellWidth+this.cellMargin);
-		this.sizeHScrollbar();
 		this.sizeZoomBars();
 		
 	},
@@ -645,7 +479,6 @@ LibMapperMatrixView.prototype = {
 		// update GUI data		
 		this.nRows++;
 		this.contentH = this.nRows*(this.cellHeight+this.cellMargin);
-		this.sizeVScrollbar();
 		this.sizeZoomBars();
 
 	}, 
@@ -845,8 +678,6 @@ LibMapperMatrixView.prototype = {
 			this.vboxW -= this.zoomIncrement;
 			this.vboxH -= this.zoomIncrement/this.aspect;
 			this.resetViewBoxes();
-			this.sizeHScrollbar();
-			this.sizeVScrollbar();
 			this.sizeZoomBars();
 		}
 	},
@@ -862,8 +693,6 @@ LibMapperMatrixView.prototype = {
 			this.vboxH = this.vboxW/this.aspect; //this.contentW/this.aspect;
 		}
 		this.resetViewBoxes();
-		this.sizeHScrollbar();
-		this.sizeVScrollbar();
 		this.sizeZoomBars();
 	},
 	
