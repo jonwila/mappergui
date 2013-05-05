@@ -46,10 +46,8 @@ function LibMapperMatrixView(container, model)
 	this.init(container);
 	this.initHorizontalZoomSlider($("#hZoomSlider"));
 	this.initVerticalZoomSlider($("#vZoomSlider"));
-
 	
-	
-	this.handleClicked; this.handleClick; this.handleValues;	//helpers for zooming scroll bars
+	this.handleClicked; this.handleClick; this.handleValues;	// helpers for zooming scroll bars
 	this.nCellIds = 0;											// helper for generating cell IDs
 	
 	//Keyboard handlers
@@ -200,6 +198,14 @@ LibMapperMatrixView.prototype = {
 						_self.vboxDim[0] = w;
 						_self.vboxDim[1] = w/_self.aspect;
 						_self.vboxPos[0] = ui.values[0];
+						if(_self.vboxPos[1]+_self.vboxDim[1] > _self.contentDim[1]){ 
+							if(_self.vboxPos[1] <= 0)
+								_self.vboxPos[1] = 0;
+							else{
+								var overflow = _self.contentDim[1] - _self.vboxPos[1] -_self.vboxDim[1];
+								_self.vboxPos[1] += overflow;
+							}
+						}
 						_self.resetViewBoxes();
 						_self.sizeZoomBars();
 					}
@@ -280,6 +286,14 @@ LibMapperMatrixView.prototype = {
 					 	_self.vboxDim[1] = h;
 					 	_self.vboxDim[0] = h*_self.aspect;
 					 	_self.vboxPos[1] = _self.contentDim[1]-ui.values[1];
+						if(_self.vboxPos[0]+_self.vboxDim[0] > _self.contentDim[0]){
+							if(_self.vboxPos[0] <= 0)
+								_self.vboxPos[0] = 0;
+							else{
+								var overflow = _self.contentDim[0] - _self.vboxPos[0] -_self.vboxDim[0];
+								_self.vboxPos[0] += overflow;
+							}
+						}
 					 	_self.resetViewBoxes();
 					 	_self.sizeZoomBars();
 				 	}
