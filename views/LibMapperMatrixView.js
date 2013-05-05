@@ -163,16 +163,6 @@ LibMapperMatrixView.prototype = {
 		
 	},
 
-	sizeZoomBars : function ()
-	{
-		$("#hZoomSlider").slider("option", "min", 0);
-		$("#hZoomSlider").slider("option", "max", this.contentDim[0]);
-		$("#hZoomSlider").slider( "option", "values", [ this.vboxPos[0], this.vboxPos[0]+this.vboxDim[0]]);
-		$("#vZoomSlider").slider("option", "min", 0);
-		$("#vZoomSlider").slider("option", "max", this.contentDim[1]);
-		$("#vZoomSlider").slider( "option", "values", [this.contentDim[1]-(this.vboxPos[1]+this.vboxDim[1]), this.contentDim[1]-this.vboxPos[1]]);
-	},
-	
 	initHorizontalZoomSlider : function ()
 	{
 		var _self = this;
@@ -188,76 +178,10 @@ LibMapperMatrixView.prototype = {
 			},
 			slide: function( event, ui ) 
 			{
-				if(_self.handleClicked)	//for when a handle is clicked (change range and zoom)
-				{
-					var w = ui.values[1]-ui.values[0];
-					//if(w < _self.vboxMinDim[0] || w > _self.vboxMaxDim[0] || w > _self.contentDim[0])
-					if(w < _self.vboxMinDim[0] || w > _self.contentDim[0])
-						return false;
-					else{
-						_self.vboxDim[0] = w;
-						_self.vboxDim[1] = w/_self.aspect;
-						_self.vboxPos[0] = ui.values[0];
-						if(_self.vboxPos[1]+_self.vboxDim[1] > _self.contentDim[1]){ 
-							if(_self.vboxPos[1] <= 0)
-								_self.vboxPos[1] = 0;
-							else{
-								var overflow = _self.contentDim[1] - _self.vboxPos[1] -_self.vboxDim[1];
-								_self.vboxPos[1] += overflow;
-							}
-						}
-						_self.resetViewBoxes();
-						_self.sizeZoomBars();
-					}
-				}
-				else	// for when the range was clicked (scroll bar and slide)
-				{
-					// calculated the drag size of mouse relative to size of the scroll bar
-					// multiplied by the range to scrollable range
-					var dx = ((event.pageX-_self.handleClick[0]) / _self.svgDim[0]) * ( _self.contentDim[0]-_self.vboxDim[0]);
-			        var v1 = _self.handleValues[0]+dx;
-			        var v2 = _self.handleValues[1]+dx;
-			        
-			        // fixes glitch when user scrolls with mouse fast beyond min/max by removing the excess 
-			        // and snapping to the min/max 
-			        if(v1 < 0){
-			        	var overflow = 0 - v1;
-			        	v1 += overflow;
-			        	v2 += overflow;
-			        }
-			        else if(v2 > _self.contentDim[0])
-		        	{
-			        	var overflow = _self.contentDim[0] - v2;
-			        	v1 += overflow;
-			        	v2 += overflow;
-			        }
-			        		
-			        // update the slider's values and the vBox's position
-		        	$("#" + this.id).slider("option", "values", [v1,v2]);
-		        	_self.vboxPos[0] =  v1;
-		        	_self.resetViewBoxes();
-			        
-		        	//disables default functionality slider
-			        return false;   
-				}
+				_self.zoomSlide(_self, this.id, ui, 0, event.pageX);
+				return false;
 			}
 		});
-		//$( "#amount2" ).val( "$" + $( "#hZoomSlider" ).slider( "values", 0 ) +
-		// " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
-	},
-	
-	/**
-	 * helper function that customizes JQueryUI Range slider to gain scrollbar functionality 
-	 * when slider is clicked, check if clicked one of the handles or the slider
-	 * if slider, store the original values (need them saved otherwise slider's default functionality overrides them)
-	 * and the click position (used to determine how much user has dragged the mouse)
-	 */
-	sliderClicked: function (e, ui, _self)
-	{
-		_self.handleClicked = $(e.originalEvent.target).hasClass("ui-slider-handle");	// true if clicked on handle, false for slider 
-		_self.handleValues = ui.values;			// store the original values 
-		_self.handleClick = [e.pageX, e.pageY];	// store the initial x/y click position
-		
 	},
 	
 	initVerticalZoomSlider : function ()
@@ -275,63 +199,103 @@ LibMapperMatrixView.prototype = {
 		      {
 				_self.sliderClicked(event, ui, _self);
 		      },
-			slide: function( event, ui ) 
-			{
-				if(_self.handleClicked)	//for when a handle is clicked (change range and zoom)
-				{
-					var h = ui.values[1]-ui.values[0];
-				 	if(h < _self.vboxMinDim[1] || h > _self.contentDim[1])
-				 		return false;
-				 	else{
-					 	_self.vboxDim[1] = h;
-					 	_self.vboxDim[0] = h*_self.aspect;
-					 	_self.vboxPos[1] = _self.contentDim[1]-ui.values[1];
-						if(_self.vboxPos[0]+_self.vboxDim[0] > _self.contentDim[0]){
-							if(_self.vboxPos[0] <= 0)
-								_self.vboxPos[0] = 0;
-							else{
-								var overflow = _self.contentDim[0] - _self.vboxPos[0] -_self.vboxDim[0];
-								_self.vboxPos[0] += overflow;
-							}
-						}
-					 	_self.resetViewBoxes();
-					 	_self.sizeZoomBars();
-				 	}
-				}
-				else	// for when the range was clicked (scroll bar and slide)
-				{
-					// calculated the drag size of mouse relative to size of the scroll bar
-					// multiplied by the range to scrollable range
-					var dy = ((_self.handleClick[1]-event.pageY) / _self.svgDim[1]) * ( _self.contentDim[1]-_self.vboxDim[1]);
-			        var v1 = _self.handleValues[0]+dy;
-			        var v2 = _self.handleValues[1]+dy;
-			        
-			        // fixes glitch when user scrolls with mouse fast beyond min/max by removing the excess 
-			        // and snapping to the min/max 
-			        if(v1 < 0){
-			        	var overflow = 0 - v1;
-			        	v1 += overflow;
-			        	v2 += overflow;
-			        }
-			        else if(v2 > _self.contentDim[1])
-		        	{
-			        	var overflow = _self.contentDim[1] - v2;
-			        	v1 += overflow;
-			        	v2 += overflow;
-			        }
-			        		
-			        // update the slider's values and the vBox's position
-		        	$("#" + this.id).slider("option", "values", [v1,v2]);
-		        	_self.vboxPos[1] =  (_self.contentDim[1]-_self.vboxDim[1]) - v1;
-		        	_self.resetViewBoxes();
-			        
-		        	//disables default functionality slider
-			        return false;   
-				}
-			}
+		      slide: function( event, ui ) 
+		      {
+		    	  _self.zoomSlide(_self, this.id, ui, 1, event.pageY);
+		    	  return false;
+		      }
 		  });
-		    //$( "#amount2" ).val( "$" + $( "#hZoomSlider" ).slider( "values", 0 ) +
-		     // " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
+	},
+	
+	/**
+	 * helper function that customizes JQueryUI Range slider to gain scrollbar functionality 
+	 * when slider is clicked, check if clicked one of the handles or the slider
+	 * if slider, store the original values (need them saved otherwise slider's default functionality overrides them)
+	 * and the click position (used to determine how much user has dragged the mouse)
+	 */
+	sliderClicked: function (e, ui, _self)
+	{
+		_self.handleClicked = $(e.originalEvent.target).hasClass("ui-slider-handle");	// true if clicked on handle, false for slider 
+		_self.handleValues = ui.values;			// store the original values 
+		_self.handleClick = [e.pageX, e.pageY];	// store the initial x/y click position
+		
+	},
+
+	/**
+	 * function that takes care of scrolling and zooming functionality for both zoom bars
+	 * param ind: 0 is X dimension, 1 is Y dimension. 
+	 * 	It points into any dimension array with X and Y values. 
+	 * 	Note Y dimension needs special treatment because dimensions are reversed
+ 	 */
+	zoomSlide : function (_self, sliderID, ui, ind, mousePos)
+	{
+		//for when a handle is clicked (change range and zoom)
+		if(_self.handleClicked)	
+		{
+			
+			var w = ui.values[1]-ui.values[0];	// new slider width
+			if(w < _self.vboxMinDim[ind] || w > _self.contentDim[ind])	// do nothing if range is less than minimum or more than content
+				return false;
+			else
+			{
+				//set the new dimensions of vbox and reposition it
+				_self.vboxDim[ind] = w;		// clicked dimension size
+				_self.vboxDim[1-ind] = (ind==0)? w/_self.aspect: w*_self.aspect;	// other dimension's size based on aspect ratio
+				_self.vboxPos[ind] = (ind==0)? ui.values[0] : _self.contentDim[ind]-ui.values[1];	// set the vbox position based on value of first handle (reversed for Y)
+				
+				//if other dimension gets out of range, must adjust the vbox's position appropriately
+				if(_self.vboxPos[1-ind]+_self.vboxDim[1-ind] > _self.contentDim[1-ind])
+				{	 
+					if(_self.vboxPos[1-ind] <= 0)	// when other dimension is at max, keep the view box at 0
+						_self.vboxPos[1-ind] = 0;
+					else							// when other dimension is not maxed, scroll left by the surpassed amount
+					{
+						var overflow = _self.contentDim[1-ind] - _self.vboxPos[1-ind] -_self.vboxDim[1-ind];
+						_self.vboxPos[1-ind] += overflow;
+					}
+				}
+				
+				// update the GUI
+				_self.resetViewBoxes();
+				_self.sizeZoomBars();
+			}
+		}
+		// for when the range was clicked (scroll and slide)
+		else	
+		{
+			// calculate new values after sliding
+			var mouseDiff = (ind==0)? mousePos-_self.handleClick[ind] : _self.handleClick[ind]-mousePos;	//reversed for Y
+			var dx = (mouseDiff / _self.svgDim[ind]) * ( _self.contentDim[ind]-_self.vboxDim[ind]);	// drag size relative to size of the scroll bar, multiplied by scrollable range	        
+			var v1 = _self.handleValues[0]+dx;	// 1st handle new value
+	        var v2 = _self.handleValues[1]+dx;	// 2nd handle new value
+	        
+	        // fixes glitch when user scrolls with mouse fast beyond min/max by removing the excess and snapping to the min/max 
+	        var overflow=0;
+	        if(v1 < 0)
+	        	overflow = 0 - v1;
+	        else if(v2 > _self.contentDim[ind])
+	        	overflow = _self.contentDim[ind] - v2;
+        	v1 += overflow;
+	        v2 += overflow;
+
+	        // update the slider's values and the vBox's position
+        	$("#" + sliderID).slider("option", "values", [v1,v2]);
+        	_self.vboxPos[ind] = (ind==0)? v1 : (_self.contentDim[ind]-_self.vboxDim[ind]) - v1;	//vertical is reversed
+        	_self.resetViewBoxes();
+		}
+	},
+	
+	/**
+	 * reset values of each zoombar based on updated content or viewbox
+	 */
+	sizeZoomBars : function ()
+	{
+		$("#hZoomSlider").slider("option", "min", 0);
+		$("#hZoomSlider").slider("option", "max", this.contentDim[0]);
+		$("#hZoomSlider").slider( "option", "values", [ this.vboxPos[0], this.vboxPos[0]+this.vboxDim[0]]);
+		$("#vZoomSlider").slider("option", "min", 0);
+		$("#vZoomSlider").slider("option", "max", this.contentDim[1]);
+		$("#vZoomSlider").slider( "option", "values", [this.contentDim[1]-(this.vboxPos[1]+this.vboxDim[1]), this.contentDim[1]-this.vboxPos[1]]);
 	},
 	
 	/**
