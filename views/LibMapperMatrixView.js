@@ -21,11 +21,14 @@ function LibMapperMatrixView(container, model)
 	this.svgNSxlink = "http://www.w3.org/1999/xlink";
 
 	this.svgDim = [600, 400];								// x-y dimensions of the svg canvas
-	this.colLabelsH = 100;
+	this.colLabelsH = 200;
 	this.rowLabelsW = 200;
 	
 	this.zoomIncrement = 50;							
-	this.aspect = this.svgDim[0]/this.svgDim[1];			// aspect ratio of view box (for zooming)
+	this.aspect = this.svgDim[0]/this.svgDim[1];			// aspect ratio of SVG viewbox (for zooming)
+	this.aspectCol = this.svgDim[0]/this.colLabelsH;		// aspect ratio of col viewbox (for zooming)
+	this.aspectRow = this.rowLabelsW/this.svgDim[1];		// aspect ratio of row viewbox (for zooming)
+	
 	this.vboxDim = [ this.svgDim[0], this.svgDim[1] ];		// vbox width-height dimensions
 	this.vboxPos = [0, 0];									// vbox x-y position
 	this.vboxMinDim = [250, 150];							// vbox minimum width-height dimensions
@@ -156,7 +159,7 @@ LibMapperMatrixView.prototype = {
 		this.svgColLabels.setAttribute("xmlns:xlink", this.svgNSxlink);
 		this.svgColLabels.setAttribute("width", this.svgDim[0]);
 		this.svgColLabels.setAttribute("height", this.colLabelsH);
-		this.svgColLabels.setAttribute("style", "clear:both; margin-left:20px;");
+		this.svgColLabels.setAttribute("style", "clear:both; margin-left:30px;");
 		this.svgColLabels.setAttribute("preserveAspectRatio", "none");
 		
 		container.appendChild(this.svgColLabels);
@@ -329,7 +332,8 @@ LibMapperMatrixView.prototype = {
 			var colLabel = this.svgColLabels.getElementById("colLabel" + j);
 			if(colLabel != null)
 			{
-				colLabel.setAttribute("transform","translate(" + ((j+1)*(this.cellDim[0]+this.cellMargin)+11).toString() + "," + this.labelMargin + ")rotate(90)");
+				var halign = colLabel.getBBox().height/4 ;		//for centered alignment 
+				colLabel.setAttribute("transform","translate(" + ((j+1)*(this.cellDim[0]+this.cellMargin)+(this.cellDim[0]/2)-halign).toString() + "," + this.labelMargin + ")rotate(90)");
 				colLabel.setAttribute("id", "colLabel"+(j+1));
 				colLabel.setAttribute("data-col", j+1);
 			}
@@ -359,14 +363,15 @@ LibMapperMatrixView.prototype = {
 		//create new COL Label
 		newLabel = document.createElementNS(this.svgNS,"text");
 		newLabel.setAttribute("id", "colLabel" + index.toString()  );
-		var xPos = index*(this.cellDim[0]+this.cellMargin)+11;			// pluss 11 MAKE DYNAMIC!
+		newLabel.appendChild(document.createTextNode(signal.name));	
+		this.svgColLabels.insertBefore(newLabel, this.svgColLabels.childNodes[index]);
+		var halign = (newLabel.getBBox().height)/4 ;		//for centered alignment. *getBBox() only works if used after adding to DOM
+		var xPos = ((index)*(this.cellDim[0]+this.cellMargin)+(this.cellDim[0]/2)-halign);			// I don't know why +4 
 		var yPos = this.labelMargin;
 		newLabel.setAttribute("class", "label");
 		newLabel.setAttribute("data-src", signal.id);
 		newLabel.setAttribute("data-col", index);
 		newLabel.setAttribute("transform","translate(" + xPos + "," + yPos + ")rotate(90)");
-		newLabel.appendChild(document.createTextNode(signal.name));	
-		this.svgColLabels.insertBefore(newLabel, this.svgColLabels.childNodes[index]);
 		
 		// update GUI data
 		this.nCols++;
@@ -405,10 +410,11 @@ LibMapperMatrixView.prototype = {
 		{
 			var rowLabel = this.svgRowLabels.getElementById("rowLabel" + i);		// get the element with the row label
 			var y = (i+1)*(this.cellDim[1]+this.cellMargin);						// calculate the new y coordinate
+			var valign = rowLabel.getBBox().height/2 + 2;							// to align vertically
 			if(rowLabel != null){
 				rowLabel.setAttribute("id", "rowLabel" + (i+1));					// update the element's ID
 				rowLabel.setAttribute("data-row", i+1);								
-				rowLabel.setAttribute("y", y+(this.cellDim[1]/2)+4);				// set the new y coordinate + offset to center vertically
+				rowLabel.setAttribute("y", y+this.cellDim[1]-valign);				// set the new y coordinate + offset to center vertically
 			}
 		}
 		
@@ -435,14 +441,15 @@ LibMapperMatrixView.prototype = {
 		
 		// create row label for the new row
 		var newRowLabel = document.createElementNS(this.svgNS,"text");
+		newRowLabel.appendChild(document.createTextNode(signal.name));	
+		this.svgRowLabels.appendChild(newRowLabel);
 		newRowLabel.setAttribute("id", "rowLabel" + index.toString()  );
 		newRowLabel.setAttribute("x", this.labelMargin);
-		newRowLabel.setAttribute("y", (index)*(this.cellDim[1]+this.cellMargin)+(this.cellDim[1]/2)+4);		// plus 4 to center vertically MAKE DYNAMIC!
 		newRowLabel.setAttribute("data-dst", signal.id);
 		newRowLabel.setAttribute("data-row", index);
 		newRowLabel.setAttribute("class","label");
-		newRowLabel.appendChild(document.createTextNode(signal.name));	
-		this.svgRowLabels.appendChild(newRowLabel);
+		var valign = newRowLabel.getBBox().height/2 + 2;		//BBox only works if used after adding to DOM
+		newRowLabel.setAttribute("y", (index)*(this.cellDim[1]+this.cellMargin)+(this.cellDim[1]-valign));	// set after added so BBox method
 		
 		// update GUI data		
 		this.nRows++;
@@ -667,8 +674,8 @@ LibMapperMatrixView.prototype = {
 	resetViewBoxes : function()
 	{
 		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], this.vboxPos[1], this.vboxDim[0], this.vboxDim[1]));
-		this.svgColLabels.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], 0, this.vboxDim[0], this.colLabelsH));
-		this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxPos[1], this.rowLabelsW, this.vboxDim[1]));
+		this.svgColLabels.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], 0, this.vboxDim[0], this.vboxDim[0]/this.aspectCol));
+		this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxPos[1], this.vboxDim[1]*this.aspectRow, this.vboxDim[1]));
 	},
 	
 	keyboardHandler: function (e, _self)
