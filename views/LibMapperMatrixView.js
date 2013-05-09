@@ -717,7 +717,7 @@ LibMapperMatrixView.prototype = {
 				removeCellClass("cell_selected", _self.selectedCell);	
 				
 				// set position of the new selected cell
-				var newPos = [currentPos[0], currentPos[1]];
+				var newPos = [currentPos[0], currentPos[1]];		// [row, col]... I know very confusing with X/Y coordinates
 				switch(e.keyCode)	
 				{
 					case 37:	// left
