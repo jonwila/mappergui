@@ -741,18 +741,16 @@ LibMapperMatrixView.prototype = {
 				//ensure newPos doesn't exceed bounds
 				if(newPos[0] < 0)
 					newPos[0] = 0;
-				else if(newPos[0] > _self.nCols-1)
-					newPos[0] = _self.nCols-1;				
+				else if(newPos[0] > _self.nRows-1)
+					newPos[0] = _self.nRows-1;				
 				if(newPos[1] < 0)
 					newPos[1] = 0;
-				else if(newPos[1] > _self.nRows-1)
-					newPos[1] = _self.nRows-1;
+				else if(newPos[1] > _self.nCols-1)
+					newPos[1] = _self.nCols-1;
 				
 				// set the new selected cell based on the arrow key movement
 				_self.selectedCell = _self.getCellByPos(newPos[0], newPos[1]);
 
-				
-				
 				// style the new cell as selected
 				addCellClass("cell_selected", _self.selectedCell);
 				
@@ -764,14 +762,11 @@ LibMapperMatrixView.prototype = {
 				var cellH = _self.cellDim[1]+_self.cellMargin;
 				var pos = [cellW*col, cellH*row];
 				
-				
-				
 				var dim; 	// helper for code re-useability, set in switch statement following (0=left/right=x, 1=up/down=y)
 				if(e.keyCode == 37 || e.keyCode == 39)
 					dim = 0;
 				else if(e.keyCode == 38 || e.keyCode == 40)
 					dim = 1;
-				
 				
 				switch(e.keyCode)	
 				{
@@ -783,7 +778,7 @@ LibMapperMatrixView.prototype = {
 						// off screen on left/up
 						if(pos[dim] < _self.vboxPos[dim] + ((m-1)*cellW))
 							_self.vboxPos[dim] = pos[dim] - ((m-1)*cellW);	// set the new position
-							if(_self.vboxPos[dim] < 0) 					// if moved less than 0, set to 0
+							if(_self.vboxPos[dim] < 0) 					// if moved to less than 0, set to 0
 								_self.vboxPos[dim] = 0; 
 						
 						// off screen on right/down
