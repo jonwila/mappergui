@@ -722,18 +722,6 @@ LibMapperMatrixView.prototype = {
 						if(currentPos[0] < _self.nRows-1)
 							_self.selectedCell = _self.getCellByPos(currentPos[0]+1, currentPos[1]);
 					  break;
-					  //old else statements for looping
-					  //keeping in case it's desired in the future
-					  /*
-						else
-							_self.selectedCell = _self.getCellByPos(currentPos[0], _self.nCols-1);	//loop to other end
-						else
-							_self.selectedCell = _self.getCellByPos(_self.nRows-1, currentPos[1]);	//loop to other end
-						else
-							_self.selectedCell = _self.getCellByPos(currentPos[0], 0);				//loop to other end
-						else
-							_self.selectedCell = _self.getCellByPos(0, currentPos[1]);				//loop to other end
-						*/
 				}
 				
 				// style the new cell as selected
@@ -751,23 +739,25 @@ LibMapperMatrixView.prototype = {
 				// if shift key is depressed, multiply the jump size;
 				
 				var dim; 	// helper for code re-useability, set in switch statement following (0=left/right=x, 1=up/down=y)
+				if(e.keyCode == 37 || e.keyCode == 39)
+					dim = 0;
+				else if(e.keyCode == 38 || e.keyCode == 40)
+					dim = 1;
 				
 				switch(e.keyCode)	
 				{
 					case 37:	// left
 					case 39:	// right
-						dim = 0;
 					case 38:	// up
 					case 40:	// down
-						dim = 1;
 
-						// off screen on left
+						// off screen on left/up
 						if(pos[dim] < _self.vboxPos[dim] + ((m-1)*cellW))
 							_self.vboxPos[dim] = pos[dim] - ((m-1)*cellW);	// set the new position
 							if(_self.vboxPos[dim] < 0) 					// if moved less than 0, set to 0
 								_self.vboxPos[dim] = 0; 
 						
-						// off screen on right
+						// off screen on right/down
 						else if(pos[dim] > _self.vboxPos[dim] + _self.vboxDim[dim] - (m*cellW))
 							_self.vboxPos[dim] = pos[dim] - _self.vboxDim[dim] + (m*cellW);		// set the new position
 							if(_self.vboxPos[dim] > _self.contentDim[dim] - _self.vboxDim[dim])	// if moved outside of content, set to the max
@@ -781,7 +771,6 @@ LibMapperMatrixView.prototype = {
 		}
 	},
 	
-
 	
 	// FIX this will not work when we remove signals
 	nextCellId : function (){
@@ -795,6 +784,13 @@ LibMapperMatrixView.prototype = {
 	
 };
 
+/**
+ * Helper function to format the viewbox string
+ * @param x x position
+ * @param y y position
+ * @param w width
+ * @param h height
+ */
 function toViewBoxString(x, y, w, h){
 	return x.toString() + " " + y.toString() + " " + w.toString() + " " + h.toString();
 };
