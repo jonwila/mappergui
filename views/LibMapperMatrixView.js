@@ -261,8 +261,8 @@ LibMapperMatrixView.prototype = {
 				}
 				
 				// update the GUI
-				_self.resetViewBoxes();
-				_self.sizeZoomBars();
+				_self.updateViewBoxes();
+				_self.updateZoomBars();
 			}
 		}
 		// for when the range was clicked (scroll and slide)
@@ -286,14 +286,14 @@ LibMapperMatrixView.prototype = {
 	        // update the slider's values and the vBox's position
         	$("#" + sliderID).slider("option", "values", [v1,v2]);
         	_self.vboxPos[ind] = (ind==0)? v1 : (_self.contentDim[ind]-_self.vboxDim[ind]) - v1;	//vertical is reversed
-        	_self.resetViewBoxes();
+        	_self.updateViewBoxes();
 		}
 	},
 	
 	/**
 	 * reset values of each zoombar based on updated content or viewbox
 	 */
-	sizeZoomBars : function ()
+	updateZoomBars : function ()
 	{
 		$("#hZoomSlider").slider("option", "min", 0);
 		$("#hZoomSlider").slider("option", "max", this.contentDim[0]);
@@ -378,7 +378,7 @@ LibMapperMatrixView.prototype = {
 		// update GUI data
 		this.nCols++;
 		this.contentDim[0] = this.nCols*(this.cellDim[0]+this.cellMargin);
-		this.sizeZoomBars();
+		this.updateZoomBars();
 		
 	},
 	
@@ -456,7 +456,7 @@ LibMapperMatrixView.prototype = {
 		// update GUI data		
 		this.nRows++;
 		this.contentDim[1] = this.nRows*(this.cellDim[1]+this.cellMargin);
-		this.sizeZoomBars();
+		this.updateZoomBars();
 
 	}, 
 	
@@ -483,10 +483,10 @@ LibMapperMatrixView.prototype = {
 			_self.onCellClick(evt, _self);
 		});
 		cell.addEventListener("mouseover", function(evt){
-			_self.cellMouseOverHandler(evt, _self);
+			_self.onCellMouseOver(evt, _self);
 		});
 		cell.addEventListener("mouseout", function(evt){
-			_self.cellMouseOverHandler(evt, _self);
+			_self.onCellMouseOver(evt, _self);
 		});
 		
 		_self.cells.push(cell);
@@ -508,7 +508,7 @@ LibMapperMatrixView.prototype = {
 	 * on cell mouseover, highlights corresponding row and columns
 	 * must handle special cases: if the cell is the selected cell or has a connection
 	 */
-	cellMouseOverHandler : function(evt, _self)    
+	onCellMouseOver : function(evt, _self)    
 	{
 		// keep reference to cell mouse is over (useful in other methods)
 		if(evt.type == "mouseover")
@@ -654,8 +654,8 @@ LibMapperMatrixView.prototype = {
 		{
 			this.vboxDim[0] -= this.zoomIncrement;
 			this.vboxDim[1] -= this.zoomIncrement/this.aspect;
-			this.resetViewBoxes();
-			this.sizeZoomBars();
+			this.updateViewBoxes();
+			this.updateZoomBars();
 		}
 	},
 	
@@ -669,11 +669,11 @@ LibMapperMatrixView.prototype = {
 			this.vboxDim[0] = (this.contentDim[0]<this.vboxMaxDim[0])? this.contentDim[0] : this.vboxMaxDim[0];
 			this.vboxDim[1] = this.vboxDim[0]/this.aspect; //this.contentDim[0]/this.aspect;
 		}
-		this.resetViewBoxes();
-		this.sizeZoomBars();
+		this.updateViewBoxes();
+		this.updateZoomBars();
 	},
 	
-	resetViewBoxes : function()
+	updateViewBoxes : function()
 	{
 		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], this.vboxPos[1], this.vboxDim[0], this.vboxDim[1]));
 		this.svgColLabels.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], 0, this.vboxDim[0], this.vboxDim[0]/this.aspectCol));
@@ -692,11 +692,23 @@ LibMapperMatrixView.prototype = {
 				_self.toggleConnection();
 		}	
 		
+		// 'ctrl' + '+' to zoom in
+		else if(e.keyCode == 187 && e.ctrlKey)
+			_self.zoomIn();
+		
+		// 'ctrl' + '-' to zoom out
+		else if(e.keyCode == 189 && e.ctrlKey)
+			_self.zoomOut();
+		
 		// movement arrows to move the selected cell
 		else if (e.keyCode == 37 || e.keyCode == 38 || e.keyCode == 39 || e.keyCode == 40)	
 		{
 			if(_self.selectedCell != null)	// cases where there is a previously selected cell
 			{
+				var m = 1;	// cell jump size
+				if (e.shiftKey === true)
+					m=3;					// if shift key is pressed, increase the jump size;
+
 				
 				// get position of the currently selected cell 
 				var currentPos = [parseInt(_self.selectedCell.getAttribute('data-row')), parseInt(_self.selectedCell.getAttribute('data-col'))];
@@ -704,26 +716,42 @@ LibMapperMatrixView.prototype = {
 				// update style to unselect the current selected cell
 				removeCellClass("cell_selected", _self.selectedCell);	
 				
-				// set the new selected cell based on the arrow key movement
+				// set position of the new selected cell
+				var newPos = [currentPos[0], currentPos[1]];
 				switch(e.keyCode)	
 				{
 					case 37:	// left
 						if(currentPos[1] > 0)
-							_self.selectedCell = _self.getCellByPos(currentPos[0], currentPos[1]-1);
+							newPos = [currentPos[0], currentPos[1]-m];
 					  break;
 					case 38:	// up
 						if(currentPos[0] > 0)
-							_self.selectedCell = _self.getCellByPos(currentPos[0]-1, currentPos[1]);
+							newPos = [currentPos[0]-m, currentPos[1]];
 					  break;
 					case 39:	// right
 						if(currentPos[1] < _self.nCols-1)
-							_self.selectedCell = _self.getCellByPos(currentPos[0], currentPos[1]+1);
+							newPos = [currentPos[0], currentPos[1]+m];
 					  break;
 					case 40:	// down
 						if(currentPos[0] < _self.nRows-1)
-							_self.selectedCell = _self.getCellByPos(currentPos[0]+1, currentPos[1]);
+							newPos = [currentPos[0]+m, currentPos[1]];
 					  break;
 				}
+				
+				//ensure newPos doesn't exceed bounds
+				if(newPos[0] < 0)
+					newPos[0] = 0;
+				else if(newPos[0] > _self.nCols-1)
+					newPos[0] = _self.nCols-1;				
+				if(newPos[1] < 0)
+					newPos[1] = 0;
+				else if(newPos[1] > _self.nRows-1)
+					newPos[1] = _self.nRows-1;
+				
+				// set the new selected cell based on the arrow key movement
+				_self.selectedCell = _self.getCellByPos(newPos[0], newPos[1]);
+
+				
 				
 				// style the new cell as selected
 				addCellClass("cell_selected", _self.selectedCell);
@@ -744,10 +772,6 @@ LibMapperMatrixView.prototype = {
 				else if(e.keyCode == 38 || e.keyCode == 40)
 					dim = 1;
 				
-				var m = 1;	// cell jump size
-				if (e.shiftKey === true)
-					m=1;					// if shift key is pressed, multiply the jump size;
-
 				
 				switch(e.keyCode)	
 				{
@@ -770,8 +794,8 @@ LibMapperMatrixView.prototype = {
 					  break;
 				}
 						
-				_self.resetViewBoxes();
-				_self.sizeZoomBars();
+				_self.updateViewBoxes();
+				_self.updateZoomBars();
 			}
 		}
 	},
