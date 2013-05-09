@@ -261,8 +261,8 @@ LibMapperMatrixView.prototype = {
 				}
 				
 				// update the GUI
-				_self.updateViewBoxes();
-				_self.updateZoomBars();
+				_self.resetViewBoxes();
+				_self.sizeZoomBars();
 			}
 		}
 		// for when the range was clicked (scroll and slide)
@@ -286,14 +286,14 @@ LibMapperMatrixView.prototype = {
 	        // update the slider's values and the vBox's position
         	$("#" + sliderID).slider("option", "values", [v1,v2]);
         	_self.vboxPos[ind] = (ind==0)? v1 : (_self.contentDim[ind]-_self.vboxDim[ind]) - v1;	//vertical is reversed
-        	_self.updateViewBoxes();
+        	_self.resetViewBoxes();
 		}
 	},
 	
 	/**
 	 * reset values of each zoombar based on updated content or viewbox
 	 */
-	updateZoomBars : function ()
+	sizeZoomBars : function ()
 	{
 		$("#hZoomSlider").slider("option", "min", 0);
 		$("#hZoomSlider").slider("option", "max", this.contentDim[0]);
@@ -378,7 +378,7 @@ LibMapperMatrixView.prototype = {
 		// update GUI data
 		this.nCols++;
 		this.contentDim[0] = this.nCols*(this.cellDim[0]+this.cellMargin);
-		this.updateZoomBars();
+		this.sizeZoomBars();
 		
 	},
 	
@@ -456,7 +456,7 @@ LibMapperMatrixView.prototype = {
 		// update GUI data		
 		this.nRows++;
 		this.contentDim[1] = this.nRows*(this.cellDim[1]+this.cellMargin);
-		this.updateZoomBars();
+		this.sizeZoomBars();
 
 	}, 
 	
@@ -483,10 +483,10 @@ LibMapperMatrixView.prototype = {
 			_self.onCellClick(evt, _self);
 		});
 		cell.addEventListener("mouseover", function(evt){
-			_self.onCellMouseOver(evt, _self);
+			_self.cellMouseOverHandler(evt, _self);
 		});
 		cell.addEventListener("mouseout", function(evt){
-			_self.onCellMouseOver(evt, _self);
+			_self.cellMouseOverHandler(evt, _self);
 		});
 		
 		_self.cells.push(cell);
@@ -508,7 +508,7 @@ LibMapperMatrixView.prototype = {
 	 * on cell mouseover, highlights corresponding row and columns
 	 * must handle special cases: if the cell is the selected cell or has a connection
 	 */
-	onCellMouseOver : function(evt, _self)    
+	cellMouseOverHandler : function(evt, _self)    
 	{
 		// keep reference to cell mouse is over (useful in other methods)
 		if(evt.type == "mouseover")
@@ -654,8 +654,8 @@ LibMapperMatrixView.prototype = {
 		{
 			this.vboxDim[0] -= this.zoomIncrement;
 			this.vboxDim[1] -= this.zoomIncrement/this.aspect;
-			this.updateViewBoxes();
-			this.updateZoomBars();
+			this.resetViewBoxes();
+			this.sizeZoomBars();
 		}
 	},
 	
@@ -669,11 +669,11 @@ LibMapperMatrixView.prototype = {
 			this.vboxDim[0] = (this.contentDim[0]<this.vboxMaxDim[0])? this.contentDim[0] : this.vboxMaxDim[0];
 			this.vboxDim[1] = this.vboxDim[0]/this.aspect; //this.contentDim[0]/this.aspect;
 		}
-		this.updateViewBoxes();
-		this.updateZoomBars();
+		this.resetViewBoxes();
+		this.sizeZoomBars();
 	},
 	
-	updateViewBoxes : function()
+	resetViewBoxes : function()
 	{
 		this.svg.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], this.vboxPos[1], this.vboxDim[0], this.vboxDim[1]));
 		this.svgColLabels.setAttribute("viewBox", toViewBoxString(this.vboxPos[0], 0, this.vboxDim[0], this.vboxDim[0]/this.aspectCol));
@@ -709,13 +709,12 @@ LibMapperMatrixView.prototype = {
 				if (e.shiftKey === true)
 					m=3;					// if shift key is pressed, increase the jump size;
 
-				
 				// get position of the currently selected cell 
 				var currentPos = [parseInt(_self.selectedCell.getAttribute('data-row')), parseInt(_self.selectedCell.getAttribute('data-col'))];
 
-				// update style to unselect the current selected cell
+				// update style to unselect the current selected cell, and call the mouseout function
 				removeCellClass("cell_selected", _self.selectedCell);	
-				
+
 				// set position of the new selected cell
 				var newPos = [currentPos[0], currentPos[1]];
 				switch(e.keyCode)	
@@ -750,11 +749,16 @@ LibMapperMatrixView.prototype = {
 				
 				// set the new selected cell based on the arrow key movement
 				_self.selectedCell = _self.getCellByPos(newPos[0], newPos[1]);
-
 				
-				
-				// style the new cell as selected
+				// style the new cell as selected, and call the mouseover function
 				addCellClass("cell_selected", _self.selectedCell);
+				
+				// helper for code re-useability, set in switch statement just below (0=left/right=x, 1=up/down=y)
+				var dim; 	
+				if(e.keyCode == 37 || e.keyCode == 39)
+					dim = 0;
+				else if(e.keyCode == 38 || e.keyCode == 40)
+					dim = 1;
 				
 				// calculate if new selected cell is visible or if it is out of view
 				// if out of view then move the viewbox
@@ -763,15 +767,6 @@ LibMapperMatrixView.prototype = {
 				var cellW = _self.cellDim[0]+_self.cellMargin;
 				var cellH = _self.cellDim[1]+_self.cellMargin;
 				var pos = [cellW*col, cellH*row];
-				
-				
-				
-				var dim; 	// helper for code re-useability, set in switch statement following (0=left/right=x, 1=up/down=y)
-				if(e.keyCode == 37 || e.keyCode == 39)
-					dim = 0;
-				else if(e.keyCode == 38 || e.keyCode == 40)
-					dim = 1;
-				
 				
 				switch(e.keyCode)	
 				{
@@ -793,12 +788,15 @@ LibMapperMatrixView.prototype = {
 									_self.vboxPos[dim] = _self.contentDim[dim] - _self.vboxDim[dim];
 					  break;
 				}
-						
-				_self.updateViewBoxes();
-				_self.updateZoomBars();
+					
+				// update the GUI
+				_self.resetViewBoxes();
+				_self.sizeZoomBars();
 			}
 		}
 	},
+	
+	
 	
 	
 	// FIX this will not work when we remove signals
@@ -813,13 +811,6 @@ LibMapperMatrixView.prototype = {
 	
 };
 
-/**
- * Helper function to format the viewbox string
- * @param x x position
- * @param y y position
- * @param w width
- * @param h height
- */
 function toViewBoxString(x, y, w, h){
 	return x.toString() + " " + y.toString() + " " + w.toString() + " " + h.toString();
 };
