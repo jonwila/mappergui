@@ -697,105 +697,91 @@ LibMapperMatrixView.prototype = {
 		{
 			if(_self.selectedCell != null)	// cases where there is a previously selected cell
 			{
-				removeCellClass("cell_selected", _self.selectedCell);
+				// get position of the currently selected cell 
 				var currentPos = [parseInt(_self.selectedCell.getAttribute('data-row')), parseInt(_self.selectedCell.getAttribute('data-col'))];
+
+				// update style to unselect the current selected cell
+				removeCellClass("cell_selected", _self.selectedCell);	
 				
+				// set the new selected cell based on the arrow key movement
 				switch(e.keyCode)	
 				{
 					case 37:	// left
 						if(currentPos[1] > 0)
 							_self.selectedCell = _self.getCellByPos(currentPos[0], currentPos[1]-1);
-//						else
-//							_self.selectedCell = _self.getCellByPos(currentPos[0], _self.nCols-1);
 					  break;
 					case 38:	// up
 						if(currentPos[0] > 0)
 							_self.selectedCell = _self.getCellByPos(currentPos[0]-1, currentPos[1]);
-//						else
-//							_self.selectedCell = _self.getCellByPos(_self.nRows-1, currentPos[1]);
 					  break;
 					case 39:	// right
 						if(currentPos[1] < _self.nCols-1)
 							_self.selectedCell = _self.getCellByPos(currentPos[0], currentPos[1]+1);
-//						else
-//							_self.selectedCell = _self.getCellByPos(currentPos[0], 0);
 					  break;
 					case 40:	// down
 						if(currentPos[0] < _self.nRows-1)
 							_self.selectedCell = _self.getCellByPos(currentPos[0]+1, currentPos[1]);
-//						else
-//							_self.selectedCell = _self.getCellByPos(0, currentPos[1]);
 					  break;
+					  //old else statements for looping
+					  //keeping in case it's desired in the future
+					  /*
+						else
+							_self.selectedCell = _self.getCellByPos(currentPos[0], _self.nCols-1);	//loop to other end
+						else
+							_self.selectedCell = _self.getCellByPos(_self.nRows-1, currentPos[1]);	//loop to other end
+						else
+							_self.selectedCell = _self.getCellByPos(currentPos[0], 0);				//loop to other end
+						else
+							_self.selectedCell = _self.getCellByPos(0, currentPos[1]);				//loop to other end
+						*/
 				}
 				
-			}
-			else	// cases where there is no selected cell
-			{
+				// style the new cell as selected
+				addCellClass("cell_selected", _self.selectedCell);
+				
+				// calculate if new selected cell is visible or if it is out of view
+				// if out of view then move the viewbox
+				var row = _self.selectedCell.getAttribute("data-row");
+				var col = _self.selectedCell.getAttribute("data-col");
+				var cellW = _self.cellDim[0]+_self.cellMargin;
+				var cellH = _self.cellDim[1]+_self.cellMargin;
+				var pos = [cellW*col, cellH*row];
+				
+				var m = 1;	// cell jump size
+				// if shift key is depressed, multiply the jump size;
+				
+				var dim; 	// helper for code re-useability, set in switch statement following (0=left/right=x, 1=up/down=y)
+				
 				switch(e.keyCode)	
 				{
-					case 37:	// left 
-						_self.selectedCell = _self.getCellByPos(0,_self.nCols-1);
-					  break;
-					case 38:	// up
-						_self.selectedCell = _self.getCellByPos(_self.nRows-1,0);
-					  break;
+					case 37:	// left
 					case 39:	// right
-						_self.selectedCell = _self.getCellByPos(0,0);
-					  break;
+						dim = 0;
+					case 38:	// up
 					case 40:	// down
-						_self.selectedCell = _self.getCellByPos(0,0);
+						dim = 1;
+
+						// off screen on left
+						if(pos[dim] < _self.vboxPos[dim] + ((m-1)*cellW))
+							_self.vboxPos[dim] = pos[dim] - ((m-1)*cellW);	// set the new position
+							if(_self.vboxPos[dim] < 0) 					// if moved less than 0, set to 0
+								_self.vboxPos[dim] = 0; 
+						
+						// off screen on right
+						else if(pos[dim] > _self.vboxPos[dim] + _self.vboxDim[dim] - (m*cellW))
+							_self.vboxPos[dim] = pos[dim] - _self.vboxDim[dim] + (m*cellW);		// set the new position
+							if(_self.vboxPos[dim] > _self.contentDim[dim] - _self.vboxDim[dim])	// if moved outside of content, set to the max
+									_self.vboxPos[dim] = _self.contentDim[dim] - _self.vboxDim[dim];
 					  break;
 				}
+						
+				_self.resetViewBoxes();
+				_self.sizeZoomBars();
 			}
-			
-			// style the cell as selected
-			addCellClass("cell_selected", _self.selectedCell);
-			
-			// calculate if cell is visible and move viewbox to follow the moving cell
-			var row = _self.selectedCell.getAttribute("data-row");
-			var col = _self.selectedCell.getAttribute("data-col");
-			var cellW = _self.cellDim[0]+_self.cellMargin;
-			var cellH = _self.cellDim[1]+_self.cellMargin;
-			var pos = [cellW*col, cellH*row];
-			
-			// off screen on left
-			if(pos[0] < _self.vboxPos[0])
-			{
-				if(_self.vboxPos[0]-cellW <0)
-					_self.vboxPos[0] = 0;
-				else
-					_self.vboxPos[0] -= cellW;
-			}
-			// off screen on right
-			else if(pos[0] > _self.vboxPos[0]+_self.vboxDim[0]-cellW)
-			{
-				_self.vboxPos[0] += 2*cellW;
-			}
-			// off screen above
-			if(pos[1] < _self.vboxPos[1])
-			{
-				if(_self.vboxPos[1]-(2*cellH) < 0)
-					_self.vboxPos[1] = 0;
-				else
-					_self.vboxPos[1] -= (2*cellH);
-			}
-			// off screen below
-			else if(pos[1] > _self.vboxPos[1]+_self.vboxDim[1]-cellH)
-			{
-				_self.vboxPos[1] += 2*(cellH);
-			}
-			
-			_self.resetViewBoxes();
-			_self.sizeZoomBars();
-			_self.updateScrollBars();
 		}
 	},
 	
-	updateScrollBars : function() {
-		$("#hScrollbar").find('.slider-horizontal').slider( "option", "value", (this.vboxPos[0] * 100) / (this.contentDim[0]-this.vboxDim[0]) );
-		$("#vScrollbar").find('.slider-vertical').slider( "option", "value", -((this.vboxPos[1]*100/(this.contentDim[1]-this.vboxPos[1]))-100)  );
-	},
-	
+
 	
 	// FIX this will not work when we remove signals
 	nextCellId : function (){
