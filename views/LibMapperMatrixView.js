@@ -185,6 +185,7 @@ LibMapperMatrixView.prototype = {
 				return false;
 			}
 		});
+		$("#hZoomSlider .ui-slider-handle").unbind('keydown');
 	},
 	
 	initVerticalZoomSlider : function ()
@@ -208,6 +209,7 @@ LibMapperMatrixView.prototype = {
 		    	  return false;
 		      }
 		  });
+		 $("#vZoomSlider .ui-slider-handle").unbind('keydown');
 	},
 	
 	/**

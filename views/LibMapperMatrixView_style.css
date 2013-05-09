@@ -3,39 +3,17 @@
 body { background-color: #ffffff; width: 850px; margin: 0 auto;	font-family: Arial, Helvetica, sans-serif;}
 svg{background: none;}
 
-/*
-#vScrollbar .slider-wrap {float: left; background-color: lightgray; width:15px;border: none;}
-#vScrollbar .slider-vertical {position:relative;height:100%; background: none; border: none}
-#vScrollbar .ui-slider-handle {width:13px;height:10px;margin:0 auto; left:0; display:block;position:absolute}
-#vScrollbar .scrollbar-top {position:absolute;top:0;}
-#vScrollbar .scrollbar-bottom {position:absolute;bottom:0;}
-#vScrollbar.scrollbar-grip {position:absolute;top:50%;margin-top:-6px;}
-#vScrollbar .ui-slider-range {position:absolute;width:100%;background-color:lightgrey}
-#vScrollbar .ui-widget-header{background: none;}
-
-#hScrollbar {margin-left: 20px;}
-#hScrollbar .slider-wrap {background-color: lightgray; height:15px;border: none;}
-#hScrollbar .slider-horizontal {position:relative;height:100%; background: none; border: none}
-#hScrollbar .ui-slider-handle {height:13px;margin:0 auto; top:0; display:block;position:absolute}
-#hScrollbar .scrollbar-top {position:absolute;top:0;}
-#hScrollbar .scrollbar-bottom {position:absolute;bottom:0;}
-#hScrollbar.scrollbar-grip {position:absolute;top:50%;margin-top:-6px;}
-#hScrollbar .ui-slider-range {position:absolute;width:100%;background-color:lightgrey}
-#hScrollbar .ui-widget-header{background: none;}
-*/
-
-
 #hZoomSlider {margin-left: 29px; height: 18px }
 #hZoomSlider .ui-slider-handle {height:18px; width: 18px; top: -1px; border-radius: 0;}
-#hZoomSlider .ui-widget-header  {background: darkgray;}
 
 #vZoomSlider {width: 18px;}
 #vZoomSlider .ui-slider-handle {height: 18px; width:18px; left: -1px; border-radius: 0;}
-#vZoomSlider .ui-widget-header  {background: darkgray;}
 
-.ui-corner-all, .ui-corner-top, .ui-corner-right, .ui-corner-tr {
-	border-radius: 0;
-}
+#hZoomSlider .ui-widget-header, #vZoomSlider .ui-widget-header  {background: darkgray;}
+#hZoomSlider .ui-state-focus, #vZoomSlider .ui-state-focus{background: #f6f6f6; border: 1px solid #cccccc;}
+#hZoomSlider .ui-state-focus.ui-state-hover, #vZoomSlider .ui-state-focus.ui-state-hover{background: #fdf5ee; border: 1px solid #fcbc09;}
+
+.ui-corner-all, .ui-corner-top, .ui-corner-right, .ui-corner-tr { border-radius: 0;}
 
 
 
