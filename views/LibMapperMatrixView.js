@@ -697,6 +697,7 @@ LibMapperMatrixView.prototype = {
 		{
 			if(_self.selectedCell != null)	// cases where there is a previously selected cell
 			{
+				
 				// get position of the currently selected cell 
 				var currentPos = [parseInt(_self.selectedCell.getAttribute('data-row')), parseInt(_self.selectedCell.getAttribute('data-col'))];
 
@@ -735,14 +736,18 @@ LibMapperMatrixView.prototype = {
 				var cellH = _self.cellDim[1]+_self.cellMargin;
 				var pos = [cellW*col, cellH*row];
 				
-				var m = 1;	// cell jump size
-				// if shift key is depressed, multiply the jump size;
+				
 				
 				var dim; 	// helper for code re-useability, set in switch statement following (0=left/right=x, 1=up/down=y)
 				if(e.keyCode == 37 || e.keyCode == 39)
 					dim = 0;
 				else if(e.keyCode == 38 || e.keyCode == 40)
 					dim = 1;
+				
+				var m = 1;	// cell jump size
+				if (e.shiftKey === true)
+					m=1;					// if shift key is pressed, multiply the jump size;
+
 				
 				switch(e.keyCode)	
 				{
