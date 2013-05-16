@@ -20,6 +20,8 @@
 
 <script>
 
+
+
 var model, view;
 
 function init(){
@@ -28,13 +30,21 @@ function init(){
 	view  = new  LibMapperMatrixView(document.getElementById("view"), model);
 	
 	// init with fake data for now
-	var nColsInit = 64, nRowsInit = 48;
+	
+	var nIn = 4, nOut = 4;
+	for(var i=nIn; i>0;i--)
+		addSourceDevice("Source " + i);
+	for(var j=nOut; j>0;j--)
+		addDestinationDevice("Destination " + j);
+	
+	
+	/*var nColsInit = 64, nRowsInit = 48;
 	for(var i=nColsInit; i>0;i--)
 		addSourceSignal(new SourceSignal("Source " + i), 0);
 	for(var j=nRowsInit; j>0;j--){
 		var sig = new DestinationSignal("Destination " + j);
 		addDestinationSignal(sig, 0);
-	}
+	}*/
 
 	// controller (from view)  
 	$("#view").on("removeConnection", function(e, src, dst){
@@ -54,16 +64,24 @@ function update(event){
 	alert("yes");
 }
 
-function addDestinationSignal(sig)
+function addDestinationDevice(name)
 {
-	model.addDestinationSignal(sig);
-	view.addDestinationSignal(sig, 0)
+	var args = new Array();
+	args['name'] = name;
+	args['n_inputs'] = 2;
+	args['n_outputs'] = 0;
+	var device = model.new_device(args);
+	view.new_device(device);
 }
 
-function addSourceSignal(sig)
+function addSourceDevice(name)
 {
-	model.addSourceSignal(sig);
-	view.addSourceSignal(sig, 0);
+	var args = new Array();
+	args['name'] = name;
+	args['n_inputs'] = 0;
+	args['n_outputs'] = 2;
+	var signal = model.new_device(args);
+	view.new_device(signal);
 }
 
 function tempBtnHandler(val)

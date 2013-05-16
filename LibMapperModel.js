@@ -2,42 +2,44 @@
 //				LibMapper Model				  //		 
 //+++++++++++++++++++++++++++++++++++++++++++ //
 
-function LibMapperModel (){
-	
-	this.cols = new Array(); 		// to hold source signals
-	this.rows = new Array(); 		// to hold destination signals
-	this.connections = new Array();	// to hold connections
+
+function LibMapperModel ()
+{
+	this.devices = new Array();
+	this.signals = new Array();
+	this.links = new Array();
+	this.connections = new Array();
 };
 
 LibMapperModel.prototype = {
 		
-		addSourceSignal : function(signal){
-			this.cols.push(signal);	
+		addSignal : function(args){
+			var sig = new Signal(args);
+			this.signals.push(sign);
+			return sig;
 		},
 		
-		addDestinationSignal : function(signal){
-			this.rows.push(signal);	
+		new_device : function(args){
+			var dev = new Device(args);
+			this.devices.push(args);
+			return dev;
 		},
 		
-		getSourceSignal : function(name){
-			var i;
-			for(i=0; i<this.cols.length; i++){
-				if(this.cols[i].name == name){
-					return cols[i];
-				}
-			}
+		getSignal : function(name){
+			for(var i=0; i<this.signals.length; i++)
+				if(this.signals[i].name == name)
+					return this.signals[i];
 			return false;	
 		},
 		
-		getDestinationSignal : function(name){
-			var i;
-			for(i=0; i<this.rows.length; i++){
-				if(this.rows[i].name == name){
-					return rows[i];
-				}
-			}
+		getDevice : function(name){
+			for(var i=0; i<this.devices.length; i++)
+				if(this.devices[i].name == name)
+					return this.devices[i];
 			return false;	
-		},
+		}
+		
+		/*
 		
 		createConnection : function(src, dst){
 			var con = new Connection(src,dst);
@@ -102,7 +104,7 @@ LibMapperModel.prototype = {
 					connection.id = "connection" + conRow + "," + conCol;
 				}
 			}
-		}
+		}*/
 		
 };
 
@@ -161,3 +163,40 @@ DestinationSignal.idCounter = 0;
 
 
 
+
+
+/**
+ * class for Devices
+ * @param args
+ */
+function Device(args)
+{	
+	this.host = args['host'];
+	this.n_connections_in = args['n_connections_in'];
+	this.n_connections_out = args['n_connections_out'];
+	this.n_inputs = args['n_inputs'];
+	this.n_links_in = args['n_links_in'];
+	this.n_links_out = args['n_links_out'];
+	this.n_outputs = args['n_outputs'];
+	this.name = args['name'];
+	this.port = args['port'];
+	this.synced = args['synced'];
+	this.version = args['version'];
+};
+
+/**
+ * class for Signals
+ * @param args
+ */
+function Signal(args)
+{
+	var device_name = args.device_name;
+	var direction = args.direction;
+	var length = args.length;
+	var max = args.max;
+	var min = args.min;
+	var name = args.name;
+	var rate = args.rate;
+	var type = args.type;
+	var unit = args.unit;
+}
