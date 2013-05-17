@@ -6,6 +6,7 @@
 
 <script src="LibMapperModel.js"></script>
 <script src="views/LibMapperMatrixView.js"></script>
+<script src="views/SvgGrid.js"></script>
 <!-- <script src="LibMapperGUIController.js"></script> -->
 <script src="js/Signal.js"></script>
 
@@ -31,7 +32,7 @@ function init(){
 	
 	// init with fake data for now
 	
-	var nIn = 4, nOut = 4;
+	var nIn = 14, nOut = 14;
 	for(var i=0; i<nIn;i++)
 		addSourceDevice("Source " + i);
 	for(var j=0; j<nOut;j++)

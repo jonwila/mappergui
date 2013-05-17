@@ -37,9 +37,7 @@ LibMapperModel.prototype = {
 				if(this.devices[i].name == name)
 					return this.devices[i];
 			return false;	
-		}
-		
-		/*
+		},
 		
 		createConnection : function(src, dst){
 			var con = new Connection(src,dst);
@@ -104,7 +102,7 @@ LibMapperModel.prototype = {
 					connection.id = "connection" + conRow + "," + conCol;
 				}
 			}
-		}*/
+		}
 		
 };
 
