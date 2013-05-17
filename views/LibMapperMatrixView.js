@@ -1,3 +1,8 @@
+function SvgGrid(){
+	
+	
+}
+
 /**
  * The View. View presents the model and provides
  * the UI events. The controller is attached to these
@@ -14,13 +19,14 @@ function LibMapperMatrixView(container, model)
 	this.dstSignals = new Array();		// reference to signals in model and extra metadata
 	this.cells = new Array();
 	
+/////Refactor into GRID class
 	this.svg;
 	this.svgRowLabels;
 	this.svgColLabels;	// holding <SVG> elements for easy reference 
 	this.svgNS = "http://www.w3.org/2000/svg";
 	this.svgNSxlink = "http://www.w3.org/1999/xlink";
 
-	this.svgDim = [600, 400];								// x-y dimensions of the svg canvas
+	this.svgDim = [300, 200];								// x-y dimensions of the svg canvas
 	this.colLabelsH = 200;
 	this.rowLabelsW = 200;
 	
@@ -45,6 +51,7 @@ function LibMapperMatrixView(container, model)
 	this.nRows = 0;											// number of rows in grid (destination signals)
 	this.nCols = 0;											// number of columns in grid (source signals)
 	this.contentDim = [0, 0];								// width-height dimension of full content
+	
 	
 	this.init(container);
 	this.initHorizontalZoomSlider($("#hZoomSlider"));
@@ -159,7 +166,7 @@ LibMapperMatrixView.prototype = {
 		this.svgColLabels.setAttribute("xmlns:xlink", this.svgNSxlink);
 		this.svgColLabels.setAttribute("width", this.svgDim[0]);
 		this.svgColLabels.setAttribute("height", this.colLabelsH);
-		this.svgColLabels.setAttribute("style", "clear:both; margin-left:30px;");
+		this.svgColLabels.setAttribute("style", "float: left; clear:both; margin-left:30px;");
 		this.svgColLabels.setAttribute("preserveAspectRatio", "none");
 		
 		container.appendChild(this.svgColLabels);
@@ -797,39 +804,64 @@ LibMapperMatrixView.prototype = {
 	
 	updateDisplay : function (){
 		
+		// reset everything in old view
 		$('#svgGrid').empty();
 		$('#svgRows').empty();
 		$('#svgCols').empty();
 		
+		this.nRows = 0;
+		this.nCols = 0;
+		
+		
 		for (var index=0; index<model.devices.length; index++)
 		{
 			var dev = model.devices[index];
-		
-			if(dev.n_outputs>0){
-				//this.addDestinationDevice(device.name, 0);
 
-				//create new COL Label
-				newLabel = document.createElementNS(this.svgNS,"text");
-				newLabel.setAttribute("id", "colLabel" + index.toString()  );
-				newLabel.appendChild(document.createTextNode(dev.name));	
-				this.svgColLabels.appendChild(newLabel);
-				var halign = (newLabel.getBBox().height)/4 ;		//for centered alignment. *getBBox() only works if used after adding to DOM
-				var xPos = ((index)*(this.cellDim[0]+this.cellMargin)+(this.cellDim[0]/2)-halign);			// I don't know why +4 
+			var label;
+			if(dev.n_outputs>0)		//create new COL Label
+			{					
+				var label = document.createElementNS(this.svgNS,"text");
+				label.setAttribute("id", "colLabel" + this.nCols  );
+				label.appendChild(document.createTextNode(dev.name));	
+				this.svgColLabels.appendChild(label);
+				var halign = (label.getBBox().height)/4 ;		//for centered alignment. *getBBox() only works if used after adding to DOM
+				var xPos = ((this.nCols)*(this.cellDim[0]+this.cellMargin)+(this.cellDim[0]/2)-halign);			// I don't know why +4 
 				var yPos = this.labelMargin;
-				newLabel.setAttribute("class", "label");
-				newLabel.setAttribute("data-src", dev.name);
-				newLabel.setAttribute("data-col", index);
-				newLabel.setAttribute("transform","translate(" + xPos + "," + yPos + ")rotate(90)");
+				label.setAttribute("class", "label");
+				label.setAttribute("data-src", dev.name);
+				label.setAttribute("data-col", this.nCols);
+				label.setAttribute("transform","translate(" + xPos + "," + yPos + ")rotate(90)");
+				this.nCols++;
+			}
+			if(dev.n_inputs>0)	// create row label for the new row
+			{	
+				var label = document.createElementNS(this.svgNS,"text");
+				label.appendChild(document.createTextNode(dev.name));	
+				this.svgRowLabels.appendChild(label);
+				label.setAttribute("id", "rowLabel" + this.nRows);
+				label.setAttribute("x", this.labelMargin);
+				label.setAttribute("data-dst", dev.name);
+				label.setAttribute("data-row", this.nRows);
+				label.setAttribute("class","label");
+				var valign = label.getBBox().height/2 + 2;		//BBox only works if used after adding to DOM
+				label.setAttribute("y", (this.nRows)*(this.cellDim[1]+this.cellMargin)+(this.cellDim[1]-valign));	// set after added so BBox method
+				this.nRows++;
 			}
 			
-			else if(dev.n_inputs>0){
-				//this.addSourceDevice(device.name, 0);
+			this.contentDim[0] = this.nCols*(this.cellDim[0]+this.cellMargin);
+			this.contentDim[1] = this.nRows*(this.cellDim[1]+this.cellMargin);
+			
+			// create the cells for the new row
+			for(var i=0; i<this.nRows; i++)
+				for(var j=0; j<this.nCols; j++)
+				{
+					var rowlLabel = this.svgColLabels.getElementById("rowLabel" + i);		
+					var colLabel = this.svgColLabels.getElementById("colLabel" + j);		
+					var cell = this.createCell(i, j, colLabel.getAttribute("data-src"), colLabel.getAttribute("data-dst"));
+					this.svg.appendChild(cell);
 			}
 			
-			// update GUI data
-			this.nCols++;
 		}
-		this.contentDim[0] = this.nCols*(this.cellDim[0]+this.cellMargin);
 		this.updateZoomBars();
 
 	},
@@ -841,37 +873,7 @@ LibMapperMatrixView.prototype = {
 	},
 	getCellIndex : function (id){
 		return (id.substring(4));
-	},
-	
-  	all_devices : function(args){
-	},
-    new_device : function(device){
-		this.updateDisplay();
-	},
-    del_device : function(args){
-	},
-    all_signals : function(args){
-	},
-    new_signal : function(args){
-	},
-    del_signal : function(args){
-	},
-    all_links : function(args){
-	},
-    new_link : function(args){
-	},
-    del_link : function(args){
-	},
-    all_connections : function(args){
-	},
-    new_connection : function(args){
-	},
-    mod_connection : function(args){
-	},
-    del_connection : function(args){
 	}
-	
-	
 	
 };
 

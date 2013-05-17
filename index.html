@@ -32,9 +32,9 @@ function init(){
 	// init with fake data for now
 	
 	var nIn = 4, nOut = 4;
-	for(var i=nIn; i>0;i--)
+	for(var i=0; i<nIn;i++)
 		addSourceDevice("Source " + i);
-	for(var j=nOut; j>0;j--)
+	for(var j=0; j<nOut;j++)
 		addDestinationDevice("Destination " + j);
 	
 	
@@ -71,7 +71,7 @@ function addDestinationDevice(name)
 	args['n_inputs'] = 2;
 	args['n_outputs'] = 0;
 	var device = model.new_device(args);
-	view.new_device(device);
+	view.updateDisplay();
 }
 
 function addSourceDevice(name)
@@ -81,7 +81,7 @@ function addSourceDevice(name)
 	args['n_inputs'] = 0;
 	args['n_outputs'] = 2;
 	var signal = model.new_device(args);
-	view.new_device(signal);
+	view.updateDisplay();
 }
 
 function tempBtnHandler(val)
