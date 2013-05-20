@@ -393,6 +393,10 @@ SvgGrid.prototype = {
 			// for when the range was clicked (scroll and slide)
 			else	
 			{
+				// do nothing if scroll bars are maxed
+				if(_self.vboxDim[ind] >= _self.contentDim[ind])
+					return false;
+				
 				// calculate new values after sliding
 				var mouseDiff = (ind==0)? mousePos-_self.handleClick[ind] : _self.handleClick[ind]-mousePos;	//reversed for Y
 				var dx = (mouseDiff / _self.svgDim[ind]) * ( _self.contentDim[ind]-_self.vboxDim[ind]);	// drag size relative to size of the scroll bar, multiplied by scrollable range	        
@@ -535,17 +539,21 @@ SvgGrid.prototype = {
 						case 38:	// up
 						case 40:	// down
 
-							// off screen on left/up
-							if(pos[dim] < this.vboxPos[dim] + ((m-1)*cellW))
-								this.vboxPos[dim] = pos[dim] - ((m-1)*cellW);	// set the new position
-								if(this.vboxPos[dim] < 0) 					// if moved to less than 0, set to 0
-									this.vboxPos[dim] = 0; 
-							
-							// off screen on right/down
-							else if(pos[dim] > this.vboxPos[dim] + this.vboxDim[dim] - (m*cellW))
-								this.vboxPos[dim] = pos[dim] - this.vboxDim[dim] + (m*cellW);		// set the new position
-								if(this.vboxPos[dim] > this.contentDim[dim] - this.vboxDim[dim])	// if moved outside of content, set to the max
-										this.vboxPos[dim] = this.contentDim[dim] - this.vboxDim[dim];
+							// prevent moving vbox if scrollbars are maxed
+							if(_self.vboxDim[dim] < _self.contentDim[dim])
+							{
+								// off screen on left/up
+								if(pos[dim] < _self.vboxPos[dim] + ((m-1)*cellW))
+									_self.vboxPos[dim] = pos[dim] - ((m-1)*cellW);	// set the new position
+									if(_self.vboxPos[dim] < 0) 					// if moved to less than 0, set to 0
+										_self.vboxPos[dim] = 0; 
+								
+								// off screen on right/down
+								else if(pos[dim] > _self.vboxPos[dim] + _self.vboxDim[dim] - (m*cellW))
+									_self.vboxPos[dim] = pos[dim] - _self.vboxDim[dim] + (m*cellW);		// set the new position
+									if(_self.vboxPos[dim] > _self.contentDim[dim] - _self.vboxDim[dim])	// if moved outside of content, set to the max
+											_self.vboxPos[dim] = _self.contentDim[dim] - _self.vboxDim[dim];
+							}
 						  break;
 					}
 							
