@@ -5,8 +5,8 @@ svgGrid {background: #fff;}
 #svgGrid {background: #ffff00;}
 
 #view{float: left;}
-#devicesGrid{position: relative; float: left;}
-#signalsGrid{position: relative; float: left;}
+#devGrid{position: relative; float: left;}
+#sigGrid{position: relative; float: left;}
 
 [id*='hZoomSlider'] {margin-left: 29px; height: 18px }
 [id*='hZoomSlider'] .ui-slider-handle {height:18px; width: 18px; top: -1px; border-radius: 0;}

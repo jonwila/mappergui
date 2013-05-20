@@ -1,6 +1,13 @@
 function SvgGrid(container, model, gridIndex){
 	
 	this.model = model;
+	
+	this.rowsArray = new Array();
+	this.colsArray = new Array();
+
+//	this.dataArray = dataArray;
+//	this.connectionsArray = connectionsArray;
+	
 	this.svg;
 	this.svgRowLabels;
 	this.svgColLabels;	// holding <SVG> elements for easy reference 
@@ -235,10 +242,6 @@ SvgGrid.prototype = {
 			else if (evt.type == "mouseout")
 				_self.mousedOverCell = null;	
 				
-			// row can be found from it's parent <g>
-			// columns must be found differently (below)	
-			var row = evt.target.parentNode;	
-			
 			var selectedRow = evt.target.getAttribute("data-row");
 			var selectedCol = evt.target.getAttribute("data-col");
 			
@@ -558,7 +561,7 @@ SvgGrid.prototype = {
 			this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxPos[1], this.vboxDim[1]*this.aspectRow, this.vboxDim[1]));
 		},
 		
-		updateDisplay : function (){
+		updateDisplay : function (rowsArray, colsArray){
 			
 			// reset everything in old view
 			$('#svgGrid' + this.gridIndex).empty();
@@ -569,57 +572,55 @@ SvgGrid.prototype = {
 			this.nCols = 0;
 			this.nCellIds = 0;
 			
-			
-			
-			for (var index=0; index<model.devices.length; index++)
+			for (var index=0; index< colsArray.length; index++)
 			{
-				var dev = model.devices[index];
+				var dev = colsArray[index];
 
-				var label;
-				if(dev.n_outputs>0)		//create new COL Label
-				{					
-					var label = document.createElementNS(this.svgNS,"text");
-					label.setAttribute("id", "colLabel" + this.nCols  );
-					label.appendChild(document.createTextNode(dev.name));	
-					this.svgColLabels.appendChild(label);
-					var halign = (label.getBBox().height)/4 ;		//for centered alignment. *getBBox() only works if used after adding to DOM
-					var xPos = ((this.nCols)*(this.cellDim[0]+this.cellMargin)+(this.cellDim[0]/2)-halign);			// I don't know why +4 
-					var yPos = this.labelMargin;
-					label.setAttribute("class", "label");
-					label.setAttribute("data-src", dev.name);
-					label.setAttribute("data-col", this.nCols);
-					label.setAttribute("transform","translate(" + xPos + "," + yPos + ")rotate(90)");
-					this.nCols++;
-				}
-				if(dev.n_inputs>0)	// create row label for the new row
-				{	
-					var label = document.createElementNS(this.svgNS,"text");
-					label.appendChild(document.createTextNode(dev.name));	
-					this.svgRowLabels.appendChild(label);
-					label.setAttribute("id", "rowLabel" + this.nRows);
-					label.setAttribute("x", this.labelMargin);
-					label.setAttribute("data-dst", dev.name);
-					label.setAttribute("data-row", this.nRows);
-					label.setAttribute("class","label");
-					var valign = label.getBBox().height/2 + 2;		//BBox only works if used after adding to DOM
-					label.setAttribute("y", (this.nRows)*(this.cellDim[1]+this.cellMargin)+(this.cellDim[1]-valign));	// set after added so BBox method
-					this.nRows++;
-				}
-				
-				this.contentDim[0] = this.nCols*(this.cellDim[0]+this.cellMargin);
-				this.contentDim[1] = this.nRows*(this.cellDim[1]+this.cellMargin);
-				
-				// create the cells for the new row
-				for(var i=0; i<this.nRows; i++)
-					for(var j=0; j<this.nCols; j++)
-					{
-						var rowLabel = this.svgRowLabels.getElementById("rowLabel" + i);		
-						var colLabel = this.svgColLabels.getElementById("colLabel" + j);		
-						var cell = this.createCell(i, j, colLabel.getAttribute("data-src"), rowLabel.getAttribute("data-dst"));
-						this.svg.appendChild(cell);
-				}
-				
+				var label = document.createElementNS(this.svgNS,"text");
+				label.setAttribute("id", "colLabel" + this.nCols  );
+				label.appendChild(document.createTextNode(dev.name));	
+				this.svgColLabels.appendChild(label);
+				var halign = (label.getBBox().height)/4 ;		//for centered alignment. *getBBox() only works if used after adding to DOM
+				var xPos = ((this.nCols)*(this.cellDim[0]+this.cellMargin)+(this.cellDim[0]/2)-halign);			// I don't know why +4 
+				var yPos = this.labelMargin;
+				label.setAttribute("class", "label");
+				label.setAttribute("data-src", dev.name);
+				label.setAttribute("data-col", this.nCols);
+				label.setAttribute("transform","translate(" + xPos + "," + yPos + ")rotate(90)");
+				this.nCols++;
 			}
+			
+			for (var index=0; index< rowsArray.length; index++)
+			{	
+				var dev = rowsArray[index];
+				var label = document.createElementNS(this.svgNS,"text");
+				label.appendChild(document.createTextNode(dev.name));	
+				this.svgRowLabels.appendChild(label);
+				label.setAttribute("id", "rowLabel" + this.nRows);
+				label.setAttribute("x", this.labelMargin);
+				label.setAttribute("data-dst", dev.name);
+				label.setAttribute("data-row", this.nRows);
+				label.setAttribute("class","label");
+				var valign = label.getBBox().height/2 + 2;		//BBox only works if used after adding to DOM
+				label.setAttribute("y", (this.nRows)*(this.cellDim[1]+this.cellMargin)+(this.cellDim[1]-valign));	// set after added so BBox method
+				this.nRows++;
+			}
+				
+			this.contentDim[0] = this.nCols*(this.cellDim[0]+this.cellMargin);
+			this.contentDim[1] = this.nRows*(this.cellDim[1]+this.cellMargin);
+			
+			// create the cells for the new row
+			for(var i=0; i<this.nRows; i++){
+				for(var j=0; j<this.nCols; j++)
+				{
+					var rowLabel = this.svgRowLabels.getElementById("rowLabel" + i);		
+					var colLabel = this.svgColLabels.getElementById("colLabel" + j);		
+					var cell = this.createCell(i, j, colLabel.getAttribute("data-src"), rowLabel.getAttribute("data-dst"));
+					this.svg.appendChild(cell);
+				}
+			}
+			
+		
 			this.updateZoomBars();
 		},
 		

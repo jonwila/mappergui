@@ -13,16 +13,16 @@ function LibMapperModel ()
 
 LibMapperModel.prototype = {
 		
-		addSignal : function(args){
-			var sig = new Signal(args);
-			this.signals.push(sign);
-			return sig;
-		},
-		
 		new_device : function(args){
 			var dev = new Device(args);
-			this.devices.push(args);
+			this.devices.push(dev);
 			return dev;
+		},
+		
+		new_signal : function(args){
+			var sig = new Signal(args);
+			this.signals.push(sig);
+			return sig;
 		},
 		
 		getSignal : function(name){
@@ -188,13 +188,13 @@ function Device(args)
  */
 function Signal(args)
 {
-	var device_name = args.device_name;
-	var direction = args.direction;
-	var length = args.length;
-	var max = args.max;
-	var min = args.min;
-	var name = args.name;
-	var rate = args.rate;
-	var type = args.type;
-	var unit = args.unit;
+	this.device_name = args['device_name'];
+	this.direction = args['direction'];
+	this.length = args['length'];
+	this.max = args['max'];
+	this.min = args['min'];
+	this.name = args['name'];
+	this.rate = args['rate'];
+	this.type = args['type'];
+	this.unit = args['unit'];
 }
