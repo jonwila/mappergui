@@ -293,6 +293,9 @@ SvgGrid.prototype = {
 		 */
 		onCellClick : function(evt, _self)    
 		{
+			
+			_self.makeActiveGrid();
+			
 			var cell = evt.target;
 		
 			if(_self.selectedCell == null)
@@ -444,7 +447,11 @@ SvgGrid.prototype = {
 			this.updateZoomBars();
 		},
 		
-		keyboardHandler: function (e, _self)
+		makeActiveGrid : function(){
+			this._container.trigger("makeActiveGrid", this.gridIndex);
+		},
+		
+		keyboardHandler: function (e)
 		{
 			if(this.nCols == 0 || this.nRows == 0)
 				return;
@@ -478,7 +485,8 @@ SvgGrid.prototype = {
 					var currentPos = [parseInt(this.selectedCell.getAttribute('data-row')), parseInt(this.selectedCell.getAttribute('data-col'))];
 
 					// update style to unselect the current selected cell
-					removeCellClass("cell_selected", this.selectedCell);	
+					//removeCellClass("cell_selected", this.selectedCell);	
+					removeCellClass("cell_selected", document.getElementById(this.selectedCell.getAttribute("id")));	
 					
 					// set position of the new selected cell
 					var newPos = [currentPos[0], currentPos[1]];		// [row, col]... I know very confusing with X/Y coordinates
@@ -516,7 +524,8 @@ SvgGrid.prototype = {
 					this.selectedCell = this.getCellByPos(newPos[0], newPos[1]);
 
 					// style the new cell as selected
-					addCellClass("cell_selected", this.selectedCell);
+					//addCellClass("cell_selected", this.selectedCell);
+					addCellClass("cell_selected", document.getElementById(this.selectedCell.getAttribute("id")));
 					
 					// calculate if new selected cell is visible or if it is out of view
 					// if out of view then move the viewbox
@@ -540,19 +549,19 @@ SvgGrid.prototype = {
 						case 40:	// down
 
 							// prevent moving vbox if scrollbars are maxed
-							if(_self.vboxDim[dim] < _self.contentDim[dim])
+							if(this.vboxDim[dim] < this.contentDim[dim])
 							{
 								// off screen on left/up
-								if(pos[dim] < _self.vboxPos[dim] + ((m-1)*cellW))
-									_self.vboxPos[dim] = pos[dim] - ((m-1)*cellW);	// set the new position
-									if(_self.vboxPos[dim] < 0) 					// if moved to less than 0, set to 0
-										_self.vboxPos[dim] = 0; 
+								if(pos[dim] < this.vboxPos[dim] + ((m-1)*cellW))
+									this.vboxPos[dim] = pos[dim] - ((m-1)*cellW);	// set the new position
+									if(this.vboxPos[dim] < 0) 					// if moved to less than 0, set to 0
+										this.vboxPos[dim] = 0; 
 								
 								// off screen on right/down
-								else if(pos[dim] > _self.vboxPos[dim] + _self.vboxDim[dim] - (m*cellW))
-									_self.vboxPos[dim] = pos[dim] - _self.vboxDim[dim] + (m*cellW);		// set the new position
-									if(_self.vboxPos[dim] > _self.contentDim[dim] - _self.vboxDim[dim])	// if moved outside of content, set to the max
-											_self.vboxPos[dim] = _self.contentDim[dim] - _self.vboxDim[dim];
+								else if(pos[dim] > this.vboxPos[dim] + this.vboxDim[dim] - (m*cellW))
+									this.vboxPos[dim] = pos[dim] - this.vboxDim[dim] + (m*cellW);		// set the new position
+									if(this.vboxPos[dim] > this.contentDim[dim] - this.vboxDim[dim])	// if moved outside of content, set to the max
+											this.vboxPos[dim] = this.contentDim[dim] - this.vboxDim[dim];
 							}
 						  break;
 					}
@@ -569,7 +578,7 @@ SvgGrid.prototype = {
 			this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxPos[1], this.vboxDim[1]*this.aspectRow, this.vboxDim[1]));
 		},
 		
-		updateDisplay : function (rowsArray, colsArray){
+		updateDisplay : function (colsArray, rowsArray){
 			
 			// reset everything in old view
 			$('#svgGrid' + this.gridIndex).empty();

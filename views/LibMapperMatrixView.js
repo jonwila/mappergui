@@ -59,6 +59,12 @@ LibMapperMatrixView.prototype = {
 		$("#sigGrid").on("toggle", function(e, cell){
 			_self.toggleConnection(e, cell);
 		});
+		$("#devGrid").on("makeActiveGrid", function(e, gridIndex){
+			_self.activeGridIndex = gridIndex;
+		});
+		$("#sigGrid").on("makeActiveGrid", function(e, gridIndex){
+			_self.activeGridIndex = gridIndex;
+		});
 	},
 	
 	toggleLink : function (e, cell)
@@ -142,9 +148,9 @@ LibMapperMatrixView.prototype = {
 	keyboardHandler: function (e, _self)
 	{
 		if(this.activeGridIndex == 0)
-			this.devGrid.keyboardHandler(e, _self);
-		else if(this.activeGridIndex == 0)
-			this.devGrid.keyboardHandler(e, _self);
+			this.devGrid.keyboardHandler(e);
+		else if(this.activeGridIndex == 1)
+			this.sigGrid.keyboardHandler(e);
 			
 	},
 	
