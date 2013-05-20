@@ -642,40 +642,7 @@ SvgGrid.prototype = {
 			if(this.selectedCell == null)	
 				return;
 
-			var selectedSrc = this.selectedCell.getAttribute("data-src");
-			var selectedDst = this.selectedCell.getAttribute("data-dst");
-			
-			// toggle the connection
-			
-			if(this.model.isConnected(selectedSrc, selectedDst) == false) // not already a connection, create the new connection
-			{
-				// trigger create connection event
-				this._container.trigger("createConnection", [selectedSrc, selectedDst]);
-				// style appropriately for GUI
-				this.selectedCell.setAttribute("class", "cell_connected cell_selected");		
-			}
-			else	// is already a connection, so remove it
-			{
-				// trigger remove connection event
-				this._container.trigger("removeConnection", [selectedSrc, selectedDst]);
-				
-				//style the cell
-				
-				if(this.mousedOverCell != null)	//style when mouse is over the toggled cell's row/col
-				{	
-					var mouseRow = this.mousedOverCell.getAttribute("data-row");
-					var mouseCol = this.mousedOverCell.getAttribute("data-col");
-					var selectedRow = this.selectedCell.getAttribute("data-row");
-					var selectedCol = this.selectedCell.getAttribute("data-col");
-					
-					if(mouseRow == selectedRow || mouseCol == selectedCol)
-						this.selectedCell.setAttribute("class", "row_over cell_selected");
-					else	
-						this.selectedCell.setAttribute("class", "cell_up cell_selected");
-				}
-				else	// style when no cell is moused over 
-					this.selectedCell.setAttribute("class", "cell_up cell_selected");
-			}
+			this._container.trigger("toggle", this.selectedCell);
 		},
 		
 		

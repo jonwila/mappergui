@@ -48,15 +48,7 @@ function init(){
 		for(var j=0; j<4;j++)
 			addDevSignal("Dest Sig " + nsig++, devName);		
 	}
-	
-	
-	/*var nColsInit = 64, nRowsInit = 48;
-	for(var i=nColsInit; i>0;i--)
-		addSourceSignal(new SourceSignal("Source " + i), 0);
-	for(var j=nRowsInit; j>0;j--){
-		var sig = new DestinationSignal("Destination " + j);
-		addDestinationSignal(sig, 0);
-	}*/
+
 
 	// controller (from view)  
 	$("#view").on("removeConnection", function(e, src, dst){
@@ -66,6 +58,14 @@ function init(){
 	});
 	$("#view").on("createConnection", function(e, src, dst){
 		model.createConnection(src, dst);
+	});
+	$("#view").on("removeLink", function(e, src, dst){
+		var linkIndex = model.getLinkIndex(src, dst);
+		if(linkIndex >= 0)
+			model.removeConnection(linkIndex);
+	});
+	$("#view").on("createLink", function(e, src, dst){
+		model.createLink(src, dst);
 	});
 
 

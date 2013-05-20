@@ -4,14 +4,40 @@
  * events to handle the user interaction.
  */
 
-function LibMapperMatrixView(container, model)
+function LibMapperMatrixView_depracated(container, model)
 {
 	
 		
 }
 
-LibMapperMatrixView.prototype = {
+LibMapperMatrixView_depracated.prototype = {
 		
+		//Should not be using indices for connections in the model.. move to the view
+		//In the model it should hold, rather hold a reference to source and destination
+		incConnectionColIndicesAfter : function(index){
+			for(var i=0; i<this.connections.length; i++)
+			{
+				var connection = this.connections[i];
+				var conCol = getColIndex(connection.id.substr(("connection").length));
+				var conRow = getRowIndex(connection.id.substr(("connection").length));
+				if (conCol >= index){
+					conCol++;
+					connection.id = "connection" + conRow + "," + conCol;
+				}
+			}
+		},
+		incConnectionRowIndicesAfter : function(index){
+			for(var i=0; i<this.connections.length; i++)
+			{
+				var connection = this.connections[i];
+				var conCol = getColIndex(connection.id.substr(("connection").length));
+				var conRow = getRowIndex(connection.id.substr(("connection").length));
+				if (conRow >= index){
+					conRow++;
+					connection.id = "connection" + conRow + "," + conCol;
+				}
+			}
+		}
 	
 };
 

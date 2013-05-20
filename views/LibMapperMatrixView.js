@@ -53,7 +53,91 @@ LibMapperMatrixView.prototype = {
 		container.appendChild(div);
 		this.sigGrid = new SvgGrid(document.getElementById("sigGrid"), model, 1);
 		
+		$("#devGrid").on("toggle", function(e, cell){
+			_self.toggleLink(e, cell);
+		});
+		$("#sigGrid").on("toggle", function(e, cell){
+			_self.toggleConnection(e, cell);
+		});
 	},
+	
+	toggleLink : function (e, cell)
+	{
+		var selectedSrc = cell.getAttribute("data-src");
+		var selectedDst = cell.getAttribute("data-dst");
+		
+		// toggle the connection
+		
+		if(this.model.isLinked(selectedSrc, selectedDst) == false) // not already a connection, create the new connection
+		{
+			// trigger create connection event
+			this._container.trigger("createLink", [selectedSrc, selectedDst]);
+			// style appropriately for GUI
+			cell.setAttribute("class", "cell_connected cell_selected");		
+		}
+		else	// is already a connection, so remove it
+		{
+			// trigger remove connection event
+			this._container.trigger("removeLink", [selectedSrc, selectedDst]);
+			
+			//style the cell
+			
+			if(this.mousedOverCell != null)	//style when mouse is over the toggled cell's row/col
+			{	
+				var mouseRow = this.mousedOverCell.getAttribute("data-row");
+				var mouseCol = this.mousedOverCell.getAttribute("data-col");
+				var selectedRow = cell.getAttribute("data-row");
+				var selectedCol = cell.getAttribute("data-col");
+				
+				if(mouseRow == selectedRow || mouseCol == selectedCol)
+					cell.setAttribute("class", "row_over cell_selected");
+				else	
+					cell.setAttribute("class", "cell_up cell_selected");
+			}
+			else	// style when no cell is moused over 
+				cell.setAttribute("class", "cell_up cell_selected");
+		}
+		
+	},
+	
+	toggleConnection : function (e, cell)
+	{
+		var selectedSrc = cell.getAttribute("data-src");
+		var selectedDst = cell.getAttribute("data-dst");
+		
+		// toggle the connection
+		
+		if(this.model.isConnected(selectedSrc, selectedDst) == false) // not already a connection, create the new connection
+		{
+			// trigger create connection event
+			this._container.trigger("createConnection", [selectedSrc, selectedDst]);
+			// style appropriately for GUI
+			cell.setAttribute("class", "cell_connected cell_selected");		
+		}
+		else	// is already a connection, so remove it
+		{
+			// trigger remove connection event
+			this._container.trigger("removeConnection", [selectedSrc, selectedDst]);
+			
+			//style the cell
+			
+			if(this.mousedOverCell != null)	//style when mouse is over the toggled cell's row/col
+			{	
+				var mouseRow = this.mousedOverCell.getAttribute("data-row");
+				var mouseCol = this.mousedOverCell.getAttribute("data-col");
+				var selectedRow = cell.getAttribute("data-row");
+				var selectedCol = cell.getAttribute("data-col");
+				
+				if(mouseRow == selectedRow || mouseCol == selectedCol)
+					cell.setAttribute("class", "row_over cell_selected");
+				else	
+					cell.setAttribute("class", "cell_up cell_selected");
+			}
+			else	// style when no cell is moused over 
+				cell.setAttribute("class", "cell_up cell_selected");
+		}
+	},
+	
 	
 	keyboardHandler: function (e, _self)
 	{

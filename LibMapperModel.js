@@ -39,6 +39,9 @@ LibMapperModel.prototype = {
 			return false;	
 		},
 		
+		
+		// CONNECTIONS
+		
 		createConnection : function(src, dst){
 			var con = new Connection(src,dst);
 			this.connections.push(con);
@@ -60,7 +63,7 @@ LibMapperModel.prototype = {
 			
 			if(this.connections.length == 0)
 				return -1;
-
+			
 			// loop through connections array to see if the cell already has a connection 
 			var i;						// to hold index to point into connections array
 			for(i=0; i<this.connections.length; i++)
@@ -77,32 +80,48 @@ LibMapperModel.prototype = {
 			return this.connections[index];
 		},
 		
-		//Should not be using indices for connections in the model.. move to the view
-		//In the model it should hold, rather hold a reference to source and destination
-		incConnectionColIndicesAfter : function(index){
-			for(var i=0; i<this.connections.length; i++)
-			{
-				var connection = this.connections[i];
-				var conCol = getColIndex(connection.id.substr(("connection").length));
-				var conRow = getRowIndex(connection.id.substr(("connection").length));
-				if (conCol >= index){
-					conCol++;
-					connection.id = "connection" + conRow + "," + conCol;
-				}
-			}
+		// LINKS
+		
+		createLink : function(src, dst){
+			var con = new Link(src,dst);
+			this.links.push(con);
 		},
-		incConnectionRowIndicesAfter : function(index){
-			for(var i=0; i<this.connections.length; i++)
+		
+		removeLink : function(index){
+			this.links.splice(index, 1);
+		},
+		
+		isLinked : function (src, dst)
+		{
+			if(this.getLinkIndex(src, dst) == -1)
+				return false;
+			else
+				return true;
+		},
+		
+		getLinkIndex : function(src, dst){
+			
+			if(this.links.length == 0)
+				return -1;
+
+			// loop through links array to see if the cell already has a connection 
+			var i;						// to hold index to point into links array
+			for(i=0; i<this.links.length; i++)
 			{
-				var connection = this.connections[i];
-				var conCol = getColIndex(connection.id.substr(("connection").length));
-				var conRow = getRowIndex(connection.id.substr(("connection").length));
-				if (conRow >= index){
-					conRow++;
-					connection.id = "connection" + conRow + "," + conCol;
+				var con = this.links[i];
+				if(con.src == src && con.dst == dst){
+					break;
 				}
 			}
+			return (i<this.links.length)? i : -1;
+		},
+		
+		getLink : function(index){
+			return this.links[index];
 		}
+		
+		
+
 		
 };
 
@@ -116,7 +135,6 @@ LibMapperModel.prototype = {
 
 function Connection(src, dst)
 {	
-	//this.id = "connection" + row + "," + col;
 	this.src = src;
 	this.dst = dst;
 	this.mute = 0;
@@ -127,39 +145,15 @@ function Connection(src, dst)
 	this.clipMax = ""; 
 };
 
-// +++++++++++++++++++++++++++++++++++++++++++ //
-//			  Source Signal Class			   //		 
-// +++++++++++++++++++++++++++++++++++++++++++ //
+//+++++++++++++++++++++++++++++++++++++++++++ //
+//				Connection Class			  //		 
+//+++++++++++++++++++++++++++++++++++++++++++ //
 
-function SourceSignal(name)
-{
-	this.id = SourceSignal.idCounter++;
-	this.name=name;
-	// direction, length, min, max, 
-	// strings: type, units
-	// metadata
+function Link(src, dst)
+{	
+	this.src = src;
+	this.dst = dst;
 };
-SourceSignal.idCounter = 0;
-
-
-// +++++++++++++++++++++++++++++++++++++++++++ //
-//			Destination Signal Class		   //		 
-// +++++++++++++++++++++++++++++++++++++++++++ //
-
-function DestinationSignal(name)
-{
-	this.id = DestinationSignal.idCounter++;
-	this.name=name;
-	//strings: host, 
-	// port, connections in, connections out, inputs, outputs, links in, links out
-	
-};
-DestinationSignal.idCounter = 0;
-
-
-
-
-
 
 
 
