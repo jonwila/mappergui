@@ -43,7 +43,10 @@ LibMapperModel.prototype = {
 		// CONNECTIONS
 		
 		createConnection : function(src, dst){
-			var con = new Connection(src,dst);
+			var args = new Array();
+			args['src_name'] = src;
+			args['dest_name'] = dst;
+			var con = new Connection(args);
 			this.connections.push(con);
 		},
 		
@@ -69,7 +72,7 @@ LibMapperModel.prototype = {
 			for(i=0; i<this.connections.length; i++)
 			{
 				var con = this.connections[i];
-				if(con.src == src && con.dst == dst){
+				if(con.src_name == src && con.dest_name == dst){
 					break;
 				}
 			}
@@ -83,8 +86,11 @@ LibMapperModel.prototype = {
 		// LINKS
 		
 		createLink : function(src, dst){
-			var con = new Link(src,dst);
-			this.links.push(con);
+			var args = new Array();
+			args['src_name'] = src;
+			args['dest_name'] = dst;
+			var link = new Link(args);
+			this.links.push(link);
 		},
 		
 		removeLink : function(index){
@@ -109,7 +115,7 @@ LibMapperModel.prototype = {
 			for(i=0; i<this.links.length; i++)
 			{
 				var con = this.links[i];
-				if(con.src == src && con.dst == dst){
+				if(con.src_name == src && con.dest_name == dst){
 					break;
 				}
 			}
@@ -132,7 +138,7 @@ LibMapperModel.prototype = {
 //+++++++++++++++++++++++++++++++++++++++++++ //
 //				Connection Class			  //		 
 //+++++++++++++++++++++++++++++++++++++++++++ //
-
+/*
 function Connection(src, dst)
 {	
 	this.src = src;
@@ -144,17 +150,18 @@ function Connection(src, dst)
 	this.clipMin = "";
 	this.clipMax = ""; 
 };
-
+*/
 //+++++++++++++++++++++++++++++++++++++++++++ //
 //				Connection Class			  //		 
 //+++++++++++++++++++++++++++++++++++++++++++ //
 
+/*
 function Link(src, dst)
 {	
 	this.src = src;
 	this.dst = dst;
 };
-
+*/
 
 
 /**
@@ -192,3 +199,39 @@ function Signal(args)
 	this.type = args['type'];
 	this.unit = args['unit'];
 }
+
+
+/**
+ * class for Links
+ * @param args
+ */
+function Link(args)
+{
+	this.src_name = args['src_name'];
+	this.dest_name =  args['dest_name'];
+};
+
+
+
+/**
+ * class for Connections
+ * @param args
+ */
+function Connection(args)
+{
+	this.src_name = args['src_name'];
+	this.dest_name =  args['dest_name'];
+	/*
+	bound_max: 0
+	bound_min: 0
+	dest_length: 1
+	dest_type: "f"
+	expression: "y=x*(0.1)+(-0)"
+	mode: 2
+	muted: 0
+	range: Array[4]
+	src_length: 1
+	src_type: "f"
+	*/
+};
+

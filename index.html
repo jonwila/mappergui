@@ -51,22 +51,26 @@ function init(){
 
 
 	// controller (from view)  
+	$("#view").on("createLink", function(e, src, dst){
+		model.createLink(src, dst);
+		view.updateDisplay();
+	});
+	$("#view").on("removeLink", function(e, src, dst){
+		var linkIndex = model.getLinkIndex(src, dst);
+		if(linkIndex >= 0){
+			model.removeLink(linkIndex);
+			view.updateDisplay();
+		}
+	});
+	$("#view").on("createConnection", function(e, src, dst){
+		model.createConnection(src, dst);
+	});
 	$("#view").on("removeConnection", function(e, src, dst){
 		var connectionIndex = model.getConnectionIndex(src, dst);
 		if(connectionIndex >= 0)
 			model.removeConnection(connectionIndex);
 	});
-	$("#view").on("createConnection", function(e, src, dst){
-		model.createConnection(src, dst);
-	});
-	$("#view").on("removeLink", function(e, src, dst){
-		var linkIndex = model.getLinkIndex(src, dst);
-		if(linkIndex >= 0)
-			model.removeConnection(linkIndex);
-	});
-	$("#view").on("createLink", function(e, src, dst){
-		model.createLink(src, dst);
-	});
+
 
 
 	

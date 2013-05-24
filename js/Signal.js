@@ -32,7 +32,7 @@ function getCellIndex(cellId)
 	return result;
 }
 
-
+/*
 function removeCellClass(needle, cell)
 {
 	var classes_ar = cell.getAttribute("class").split(" ");
@@ -50,7 +50,8 @@ function removeCellClass(needle, cell)
 			nClasses++;	
 		}
 	}	
-	cell.setAttribute("class", result);
+	//cell.setAttribute("class", result);
+	cell.className = result;
 }
 
 function addCellClass(needle, cell)
@@ -58,9 +59,10 @@ function addCellClass(needle, cell)
 	var haystack = cell.getAttribute("class").toString();
 	if(haystack.indexOf(needle) == -1)
 		haystack += (" " + needle);
-	cell.setAttribute("class", haystack);
+	//cell.setAttribute("class", haystack);
+	cell.className = haystack;
 }
-
+*/
 
 function arrPushIfUnique(item, arr){
 	if(arrIsUnique(item, arr))

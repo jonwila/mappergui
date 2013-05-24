@@ -200,7 +200,8 @@ SvgGrid.prototype = {
 		createCell : function (row, col, src, dst)
 		{
 			var cell = document.createElementNS(this.svgNS,"rect");
-			cell.setAttribute("id", this.nextCellId());
+			cell.id = this.nextCellId();
+			//cell.setAttribute("id", this.nextCellId());
 			cell.setAttribute("data-row", row);
 			cell.setAttribute("data-col", col);
 			cell.setAttribute("data-src", src);
@@ -225,14 +226,6 @@ SvgGrid.prototype = {
 			cell.addEventListener("mouseout", function(evt){
 				_self.onCellMouseOver(evt, _self);
 			});
-			
-			cell.setAttribute("draggable","true");
-			cell.addEventListener("ondragstart", function(){
-				//_self.onCellMouseOver(evt, _self);
-				alert("hi!!");
-			});
-			
-			
 			
 			_self.cells.push(cell);
 			return cell;
@@ -309,20 +302,21 @@ SvgGrid.prototype = {
 			if(_self.selectedCell == null)
 			{
 				// set the clicked cell as selected
-				addCellClass("cell_selected", cell);
 				_self.selectedCell = cell;
+				_self.selectedCell.classList.add('cell_selected');
 			}
 			else if(cell.id != _self.selectedCell.id)	
 			{	
 				// clear last selected cell
-				removeCellClass("cell_selected", _self.selectedCell);
+				_self.selectedCell.classList.remove('cell_selected');
 				// set the clicked cell as selected
-				addCellClass("cell_selected", cell);
 				_self.selectedCell = cell;
+				_self.selectedCell.classList.add('cell_selected');
 			}	
 			else	// already selected, so deselect
 			{
-				removeCellClass("cell_selected", cell);
+				//removeCellClass("cell_selected", cell);
+				_self.selectedCell.classList.remove('cell_selected');
 				_self.selectedCell = null;
 			}
 			
@@ -491,7 +485,7 @@ SvgGrid.prototype = {
 					var currentPos = [parseInt(this.selectedCell.getAttribute('data-row')), parseInt(this.selectedCell.getAttribute('data-col'))];
 
 					// update style to unselect the current selected cell
-					removeCellClass("cell_selected", this.selectedCell); 
+					this.selectedCell.classList.remove('cell_selected');
 					
 					// set position of the new selected cell
 					var newPos = [currentPos[0], currentPos[1]];		// [row, col]... I know very confusing with X/Y coordinates
@@ -529,7 +523,7 @@ SvgGrid.prototype = {
 					this.selectedCell = this.getCellByPos(newPos[0], newPos[1]);
 
 					// style the new cell as selected
-					addCellClass("cell_selected", this.selectedCell);	
+					this.selectedCell.classList.add('cell_selected');
 					
 					// calculate if new selected cell is visible or if it is out of view
 					// if out of view then move the viewbox
@@ -582,7 +576,7 @@ SvgGrid.prototype = {
 			this.svgRowLabels.setAttribute("viewBox", toViewBoxString(0, this.vboxPos[1], this.vboxDim[1]*this.aspectRow, this.vboxDim[1]));
 		},
 		
-		updateDisplay : function (colsArray, rowsArray){
+		updateDisplay : function (colsArray, rowsArray, connectionsArray){
 			
 			// reset everything in old view
 			$('#svgGrid' + this.gridIndex).empty();
@@ -642,15 +636,43 @@ SvgGrid.prototype = {
 					var src = colLabel.getAttribute("data-src");
 					var dst = rowLabel.getAttribute("data-dst");
 					var cell = this.createCell(i, j, src, dst);
+					
 					// check if it was the selected cell
-					//if(this.selectedCell && this.selectedCell.getAttribute("data-src") == src && this.selectedCell.getAttribute("data-dst") == dst)
-					//$("#" + cell.getAttribute("id")).addClass("cell_selected");
+					// FIX: This is dangerous. The selected cell is pointing to a DOM element that was removed with empty 
+					// but it seems that all the attributes are still stored in the this.selectedCell
+					// so I check if the created cell has the same src/dst and the reset the selected cell
+					// should be fixed by storing srn/dst identifiers instead of reference to the actual cell
+					if(this.selectedCell && this.selectedCell.getAttribute("data-src") == src && this.selectedCell.getAttribute("data-dst") == dst)
+					{
+						this.selectedCell = cell;
+						this.selectedCell.classList.add('cell_selected');
+					}
 					this.svg.appendChild(cell);
 				}
 			}
 		
 			// update values for the zoom-slider bars
 			this.updateZoomBars();
+			
+			// create the links
+			for (var i=0; i< connectionsArray.length; i++)
+			{
+				var s = connectionsArray[i].src_name;
+				var d = connectionsArray[i].dest_name;
+				
+				for (var j=0; j<this.cells.length; j++)
+				{
+					var src = this.cells[j].getAttribute("data-src"); 
+					var dst = this.cells[j].getAttribute("data-dst");
+					if(s == src && d == dst)
+					{
+						this.cells[j].classList.add('cell_connected');
+					}	
+				}
+				
+			}
+
+			
 		},
 		
 		/**

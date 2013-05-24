@@ -118,10 +118,7 @@ LibMapperMatrixView.prototype = {
 		
 		if(this.model.isLinked(selectedSrc, selectedDst) == false) // not already a connection, create the new connection
 		{
-			// trigger create connection event
-			this._container.trigger("createLink", [selectedSrc, selectedDst]);
-			// style appropriately for GUI
-			cell.setAttribute("class", "cell_connected cell_selected");		
+			this._container.trigger("createLink", [selectedSrc, selectedDst]);	// trigger create connection event
 		}
 		else	// is already a connection, so remove it
 		{
@@ -129,7 +126,7 @@ LibMapperMatrixView.prototype = {
 			this._container.trigger("removeLink", [selectedSrc, selectedDst]);
 			
 			//style the cell
-			
+			/*
 			if(this.mousedOverCell != null)	//style when mouse is over the toggled cell's row/col
 			{	
 				var mouseRow = this.mousedOverCell.getAttribute("data-row");
@@ -144,6 +141,7 @@ LibMapperMatrixView.prototype = {
 			}
 			else	// style when no cell is moused over 
 				cell.setAttribute("class", "cell_up cell_selected");
+				*/
 		}
 		
 	},
@@ -198,8 +196,13 @@ LibMapperMatrixView.prototype = {
 	
 	updateDisplay : function (){
 		
+		this.updateDevicesGrid();
+		this.updateSignalsGrid();
+	},
+	
+	updateDevicesGrid : function(){
+
 		//divide devices into sources and destinations
-		
 		var srcDevs = new Array();
 		var dstDevs = new Array();
 		
@@ -212,8 +215,13 @@ LibMapperMatrixView.prototype = {
 				dstDevs.push(dev);
 		}
 		
-		this.devGrid.updateDisplay(srcDevs, dstDevs);
-
+		this.devGrid.updateDisplay(srcDevs, dstDevs, this.model.links);
+		
+		
+	},
+	
+	updateSignalsGrid : function(){
+		
 		// show signals for included srcs/destinations
 		var srcSigs = new Array();
 		var dstSigs = new Array();
@@ -232,7 +240,7 @@ LibMapperMatrixView.prototype = {
 			}
 			
 		}	
-		this.sigGrid.updateDisplay(srcSigs, dstSigs);
+		this.sigGrid.updateDisplay(srcSigs, dstSigs, this.model.connections);
 	}
 	
 	// show the connections
