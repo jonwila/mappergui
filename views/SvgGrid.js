@@ -326,7 +326,7 @@ SvgGrid.prototype = {
 		},
 		
 		nextCellId : function (){
-			return "cell" + this.nCellIds++;
+			return "cell" + this.gridIndex + "_" + this.nCellIds++;
 		},
 		
 		getCellByPos : function (row, col)
@@ -351,7 +351,6 @@ SvgGrid.prototype = {
 			_self.handleClicked = $(e.originalEvent.target).hasClass("ui-slider-handle");	// true if clicked on handle, false for slider 
 			_self.handleValues = ui.values;			// store the original values 
 			_self.handleClick = [e.pageX, e.pageY];	// store the initial x/y click position
-			
 		},
 
 		/**
@@ -479,14 +478,12 @@ SvgGrid.prototype = {
 					var m = 1;	// cell jump size
 					if (e.shiftKey === true)
 						m=3;					// if shift key is pressed, increase the jump size;
-
 					
 					// get position of the currently selected cell 
 					var currentPos = [parseInt(this.selectedCell.getAttribute('data-row')), parseInt(this.selectedCell.getAttribute('data-col'))];
 
 					// update style to unselect the current selected cell
-					//removeCellClass("cell_selected", this.selectedCell);	
-					removeCellClass("cell_selected", document.getElementById(this.selectedCell.getAttribute("id")));	
+					removeCellClass("cell_selected", this.selectedCell); 
 					
 					// set position of the new selected cell
 					var newPos = [currentPos[0], currentPos[1]];		// [row, col]... I know very confusing with X/Y coordinates
@@ -524,8 +521,7 @@ SvgGrid.prototype = {
 					this.selectedCell = this.getCellByPos(newPos[0], newPos[1]);
 
 					// style the new cell as selected
-					//addCellClass("cell_selected", this.selectedCell);
-					addCellClass("cell_selected", document.getElementById(this.selectedCell.getAttribute("id")));
+					addCellClass("cell_selected", this.selectedCell);	
 					
 					// calculate if new selected cell is visible or if it is out of view
 					// if out of view then move the viewbox
@@ -584,6 +580,8 @@ SvgGrid.prototype = {
 			$('#svgGrid' + this.gridIndex).empty();
 			$('#svgRows' + this.gridIndex).empty();
 			$('#svgCols' + this.gridIndex).empty();
+			this.cells = new Array();
+			
 			
 			this.nRows = 0;
 			this.nCols = 0;
@@ -667,4 +665,4 @@ SvgGrid.prototype = {
 			$("#vZoomSlider" + this.gridIndex).slider("option", "max", this.contentDim[1]);
 			$("#vZoomSlider" + this.gridIndex).slider( "option", "values", [this.contentDim[1]-(this.vboxPos[1]+this.vboxDim[1]), this.contentDim[1]-this.vboxPos[1]]);
 		}
-}
+};
