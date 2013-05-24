@@ -213,7 +213,7 @@ SvgGrid.prototype = {
 			cell.setAttribute("width",this.cellDim[0]);
 			cell.setAttribute("height",this.cellDim[1]);
 			cell.setAttribute("class","cell_up");
-			
+
 
 			var _self = this;	// to pass to the instance of LibMapperMatrixView to event handlers
 			cell.addEventListener("click", function(evt){
@@ -225,6 +225,14 @@ SvgGrid.prototype = {
 			cell.addEventListener("mouseout", function(evt){
 				_self.onCellMouseOver(evt, _self);
 			});
+			
+			cell.setAttribute("draggable","true");
+			cell.addEventListener("ondragstart", function(){
+				//_self.onCellMouseOver(evt, _self);
+				alert("hi!!");
+			});
+			
+			
 			
 			_self.cells.push(cell);
 			return cell;
@@ -581,12 +589,11 @@ SvgGrid.prototype = {
 			$('#svgRows' + this.gridIndex).empty();
 			$('#svgCols' + this.gridIndex).empty();
 			this.cells = new Array();
-			
-			
+			this.nCellIds = 0;
 			this.nRows = 0;
 			this.nCols = 0;
-			this.nCellIds = 0;
 			
+			// create column labels
 			for (var index=0; index< colsArray.length; index++)
 			{
 				var dev = colsArray[index];
@@ -605,6 +612,7 @@ SvgGrid.prototype = {
 				this.nCols++;
 			}
 			
+			// create row labels
 			for (var index=0; index< rowsArray.length; index++)
 			{	
 				var dev = rowsArray[index];
@@ -620,22 +628,28 @@ SvgGrid.prototype = {
 				label.setAttribute("y", (this.nRows)*(this.cellDim[1]+this.cellMargin)+(this.cellDim[1]-valign));	// set after added so BBox method
 				this.nRows++;
 			}
-				
+			
+			// set the dimension variables
 			this.contentDim[0] = this.nCols*(this.cellDim[0]+this.cellMargin);
 			this.contentDim[1] = this.nRows*(this.cellDim[1]+this.cellMargin);
 			
-			// create the cells for the new row
+			// create the cells
 			for(var i=0; i<this.nRows; i++){
 				for(var j=0; j<this.nCols; j++)
 				{
 					var rowLabel = this.svgRowLabels.getElementById("rowLabel" + i);		
-					var colLabel = this.svgColLabels.getElementById("colLabel" + j);		
-					var cell = this.createCell(i, j, colLabel.getAttribute("data-src"), rowLabel.getAttribute("data-dst"));
+					var colLabel = this.svgColLabels.getElementById("colLabel" + j);	
+					var src = colLabel.getAttribute("data-src");
+					var dst = rowLabel.getAttribute("data-dst");
+					var cell = this.createCell(i, j, src, dst);
+					// check if it was the selected cell
+					//if(this.selectedCell && this.selectedCell.getAttribute("data-src") == src && this.selectedCell.getAttribute("data-dst") == dst)
+					//$("#" + cell.getAttribute("id")).addClass("cell_selected");
 					this.svg.appendChild(cell);
 				}
 			}
-			
 		
+			// update values for the zoom-slider bars
 			this.updateZoomBars();
 		},
 		

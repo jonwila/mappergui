@@ -1,0 +1,101 @@
+<!doctype html>
+ 
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Playground</title>
+  <link rel="stylesheet" href="http://code.jquery.com/ui/1.10.2/themes/smoothness/jquery-ui.css" />
+  <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
+  <script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
+  <script>
+  $(function() {
+    $( "#vZoomSlider" ).slider({
+      orientation: "vertical",
+      range: true,
+      values: [ 17, 67 ],
+      min: 0,
+      max: 100,
+      slide: function( event, ui ) {
+        $( "#amount" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
+      }
+    });
+    $( "#amount" ).val( "$" + $( "#vZoomSlider" ).slider( "values", 0 ) +
+      " - $" + $( "#vZoomSlider" ).slider( "values", 1 ) );
+  });
+
+  $(function() {
+	    $( "#hZoomSlider" ).slider({
+	      range: true,
+	      min: 0,
+	      max: 100,
+	      values: [ 25, 75 ],
+	      start: sliderCheck,
+	      slide: function( event, ui ) 
+	      {
+	        if(handleClicked)
+		    {
+		        $( "#amount2" ).val( "$" + ui.values[ 0 ] + " - $" + ui.values[ 1 ] );
+	        }
+	        else
+	        {
+		        var min = $("#" + this.id).slider( "option", "min" );
+		        var max = $("#" + this.id).slider( "option", "max" );
+		        var range = max - min;
+		        
+		        var dx = ((event.pageX - handleClickX)/500)*100;	
+		        //500 is width of the slider's div
+		        //100 is range??
+
+		        if(handleValues[0]+dx >= min && handleValues[1]+dx <= max) 
+		        {				        
+		        	$("#" + this.id).slider("values", 0, handleValues[0]+dx);
+		        	$("#" + this.id).slider("values", 1, handleValues[1]+dx);
+		        var v1 = handleValues[0]+dx;
+		        var v2 = handleValues[1]+dx;
+		        $( "#amount2" ).val( "$" + v1 + " - $" + v2 );
+		        } 
+
+
+		        return false;   
+	        }
+	      }
+	    });
+	    
+//	    $( "#amount2" ).val( "$" + $( "#hZoomSlider" ).slider( "values", 0 ) +
+//	      " - $" + $( "#hZoomSlider" ).slider( "values", 1 ) );
+
+	  });
+
+  var handleClicked;
+  var handleClickX;
+  var handleValues;
+  
+  function sliderCheck(e, ui){
+	  handleClicked = $(e.originalEvent.target).hasClass("ui-slider-handle");
+	  handleValues = ui.values;
+	  handleClickX = e.pageX;
+  }
+  
+  </script>
+</head>
+<body>
+ 
+<p>
+  <label for="amount">Target sales goal (Millions):</label>
+  <input type="text" id="amount" style="border: 0; color: #f6931f; font-weight: bold;" />
+</p>
+ 
+<div id="vZoomSlider" style="height: 250px;"></div>
+ 
+ 
+ <p>
+  <label for="amount2">Price range:</label>
+  <input type="text" id="amount2" style="border: 0; color: #f6931f; font-weight: bold;" />
+</p>
+ 
+ <div class="cap left" style="width: 15px"></div>
+<div id="hZoomSlider" style="width: 500px"></div>
+ <div class="cap right" style="float: left; position; relative; width: 15px; background-color: red">a</div>
+ 
+</body>
+</html>

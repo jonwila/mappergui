@@ -12,10 +12,15 @@ function LibMapperMatrixView(container, model)
 
 	this.srcSignals = new Array();		// reference to signals in model and extra metadata
 	this.dstSignals = new Array();		// reference to signals in model and extra metadata
+
+	
 	
 	this.activeGridIndex = 0;
 	this.devGrid;
 	this.sigGrid;
+	
+	this.includedSrcs = new Array();
+	this.includedDsts = new Array();
 	
 	this.init(container, model);
 
@@ -42,16 +47,49 @@ LibMapperMatrixView.prototype = {
 	init : function (container, model) 
 	{ 
 		var _self = this;	// to pass to the instance of LibMApperMatrixView to event handlers
+		var div, btn;		// to instantiate items
 		
-		var div = document.createElement("div");
+		// devices Grid (gridIndex=0)
+		div = document.createElement("div");
 		div.setAttribute("id", "devGrid");
 		container.appendChild(div);
 		this.devGrid = new SvgGrid(document.getElementById("devGrid"), model, 0);
 		
+		// Signals Grid (gridIndex=1)
 		div = document.createElement("div");
 		div.setAttribute("id", "sigGrid");
 		container.appendChild(div);
 		this.sigGrid = new SvgGrid(document.getElementById("sigGrid"), model, 1);
+		
+			
+		// button bar
+		div = document.createElement("div");
+		div.setAttribute("id", "actionBar");
+		div.setAttribute("style", "margin-bottom: 5px; margin-left: 16px; width: 200px;");
+		
+		// add device button
+		btn = document.createElement("button");
+		btn.innerHTML = "ADD";
+		btn.addEventListener("click", function(evt){
+			if(_self.devGrid.selectedCell)
+				arrPushIfUnique(_self.devGrid.selectedCell.getAttribute("data-src"), _self.includedSrcs);
+				arrPushIfUnique(_self.devGrid.selectedCell.getAttribute("data-dst"), _self.includedDsts);
+				_self.updateDisplay();
+		});
+		div.appendChild(btn);
+			
+		//remove device button
+		btn = document.createElement("button");
+		btn.innerHTML = "REM";
+		btn.addEventListener("click", function(evt){
+			if(_self.devGrid.selectedCell)
+				arrPushIfUnique(_self.devGrid.selectedCell.getAttribute("data-src"), _self.includedSrcs);
+				arrPushIfUnique(_self.devGrid.selectedCell.getAttribute("data-dst"), _self.includedDsts);
+				_self.updateDisplay();
+		});
+		div.appendChild(btn);
+		container.appendChild(div);
+		// END button bar
 		
 		$("#devGrid").on("toggle", function(e, cell){
 			_self.toggleLink(e, cell);
@@ -60,11 +98,15 @@ LibMapperMatrixView.prototype = {
 			_self.toggleConnection(e, cell);
 		});
 		$("#devGrid").on("makeActiveGrid", function(e, gridIndex){
-			_self.activeGridIndex = gridIndex;
+			_self.setActiveGrid(gridIndex);
 		});
 		$("#sigGrid").on("makeActiveGrid", function(e, gridIndex){
-			_self.activeGridIndex = gridIndex;
+			_self.setActiveGrid(gridIndex);
 		});
+	},
+	
+	setActiveGrid : function(gridIndex){
+		this.activeGridIndex = gridIndex;
 	},
 	
 	toggleLink : function (e, cell)
@@ -157,6 +199,7 @@ LibMapperMatrixView.prototype = {
 	updateDisplay : function (){
 		
 		//divide devices into sources and destinations
+		
 		var srcDevs = new Array();
 		var dstDevs = new Array();
 		
@@ -171,35 +214,28 @@ LibMapperMatrixView.prototype = {
 		
 		this.devGrid.updateDisplay(srcDevs, dstDevs);
 
-		
-		var srcSigs= new Array();
+		// show signals for included srcs/destinations
+		var srcSigs = new Array();
 		var dstSigs = new Array();
 		
-		
 		// for each device, get its signals
-		for (var i=0; i< srcDevs.length; i++)
-		{	
-			var dev = srcDevs[i];
-			for (var j=0; j< this.model.signals.length; j++)
-			{
-				var sig = this.model.signals[j];
-				if(sig.device_name == dev.name)
+		for (var j=0; j< this.model.signals.length; j++)
+		{
+			var sig = this.model.signals[j];
+			for (var i=0; i<this.includedSrcs.length; i++){
+				if(sig.device_name == this.includedSrcs[i])
 					srcSigs.push(sig);
 			}
-		}
-		for (var i=0; i< dstDevs.length; i++)
-		{	
-			var dev = dstDevs[i];
-			for (var j=0; j< this.model.signals.length; j++)
-			{
-				var sig = this.model.signals[j];
-				if(sig.device_name == dev.name)
+			for (var i=0; i<this.includedDsts.length; i++){
+				if(sig.device_name == this.includedDsts[i])
 					dstSigs.push(sig);
 			}
-		}
+			
+		}	
 		this.sigGrid.updateDisplay(srcSigs, dstSigs);
 	}
 	
+	// show the connections
 	
 	
 };
